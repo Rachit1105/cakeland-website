@@ -1,28 +1,11 @@
 import { NextResponse } from 'next/server';
-import { pipeline } from '@xenova/transformers';
 import { supabase } from '../../../utils/supabase';
 
-class TextEmbedder {
-    static model = 'Xenova/clip-vit-large-patch14';
-    static instance: any = null;
-    static processor: any = null;
-
-    static async getInstance() {
-        if (this.instance === null) {
-            // Import the specific modules we need
-            const { AutoTokenizer, CLIPTextModelWithProjection } = await import('@xenova/transformers');
-
-            // Load the tokenizer and text model separately
-            this.processor = await AutoTokenizer.from_pretrained(this.model);
-            this.instance = await CLIPTextModelWithProjection.from_pretrained(this.model);
-        }
-        return { model: this.instance, tokenizer: this.processor };
-    }
-}
+const CLIP_API_URL = 'https://rachit1105-clip-embedding-api.hf.space';
 
 export async function POST(request: Request) {
     try {
-        console.log('Search API called'); // DEBUG: Verify endpoint is hit
+        console.log('Search API called');
         const body = await request.json();
         const { query } = body;
 
@@ -30,28 +13,26 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Query is required' }, { status: 400 });
         }
 
-        // 1. Generate embedding for the search query using CLIP text encoder
-        const { model, tokenizer } = await TextEmbedder.getInstance();
+        // 1. Generate embedding for the search query using Hugging Face CLIP API
+        console.log('Calling CLIP API for query:', query);
+        const clipResponse = await fetch(`${CLIP_API_URL}/embed-text`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: query })
+        });
 
-        // Tokenize the text
-        const textInputs = await tokenizer(query, { padding: true, truncation: true });
+        if (!clipResponse.ok) {
+            throw new Error(`CLIP API error: ${clipResponse.statusText}`);
+        }
 
-        // Generate embeddings
-        const output = await model(textInputs);
-
-        // Get the pooled output and normalize it
-        const embedding = output.text_embeds.data;
-        const queryEmbedding: number[] = Array.from(embedding) as number[];
-
-        // Normalize the embedding
-        const norm = Math.sqrt(queryEmbedding.reduce((sum, val) => sum + val * val, 0));
-        const normalizedEmbedding = queryEmbedding.map(val => val / norm);
+        const { embedding } = await clipResponse.json();
+        const queryEmbedding: number[] = embedding;
 
         // 2. Search for similar products using pgvector
         console.log('Searching for query:', query);
         // Using RPC function for vector similarity search
         const { data: products, error } = await supabase.rpc('match_products', {
-            query_embedding: normalizedEmbedding,
+            query_embedding: queryEmbedding,
             match_threshold: 0.0,  // DEBUG: Set to 0.0 to see EVERYTHING
             match_count: 20
         });
@@ -82,7 +63,7 @@ export async function POST(request: Request) {
             const results = allProducts
                 .map((product: any) => {
                     const productEmbedding = product.embedding as number[];
-                    const similarity = cosineSimilarity(normalizedEmbedding, productEmbedding);
+                    const similarity = cosineSimilarity(queryEmbedding, productEmbedding);
                     return {
                         ...product,
                         similarity

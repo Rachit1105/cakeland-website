@@ -1,18 +1,6 @@
 import { NextResponse } from 'next/server';
-import { pipeline } from '@xenova/transformers';
 
-// We don't want to reload the AI model for every request, so we store it globally.
-// This is a "Singleton" pattern.
-let embedder: any = null;
-
-async function getEmbedder() {
-    if (!embedder) {
-        // We download the 'CLIP' model. This model is great at connecting images to text.
-        // 'feature-extraction' means "give me the raw numbers describing this image".
-        embedder = await pipeline('feature-extraction', 'Xenova/clip-vit-large-patch14');
-    }
-    return embedder;
-}
+const CLIP_API_URL = 'https://rachit1105-clip-embedding-api.hf.space';
 
 export async function POST(request: Request) {
     try {
@@ -23,18 +11,21 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Image URL is required' }, { status: 400 });
         }
 
-        // 1. Load the AI Model
-        const generateEmbedding = await getEmbedder();
+        // Call your Hugging Face CLIP API
+        const response = await fetch(`${CLIP_API_URL}/embed-image`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_url: imageUrl })
+        });
 
-        // 2. The AI looks at the image from your URL
-        // It outputs a "Tensor" (a complex math object).
-        const output = await generateEmbedding(imageUrl);
+        if (!response.ok) {
+            throw new Error(`CLIP API error: ${response.statusText}`);
+        }
 
-        // 3. Convert the Tensor into a simple list of numbers (JavaScript Array)
-        const embedding = Array.from(output.data);
+        const data = await response.json();
 
-        // 4. Send the numbers back to your frontend
-        return NextResponse.json({ embedding });
+        // Return the 768-dimensional embedding
+        return NextResponse.json({ embedding: data.embedding });
 
     } catch (error) {
         console.error('AI Error:', error);
