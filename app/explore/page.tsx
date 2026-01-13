@@ -20,6 +20,7 @@ export default function ExplorePage() {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
+    const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
 
     // Scroll detection for header
     useEffect(() => {
@@ -203,28 +204,34 @@ export default function ExplorePage() {
                     </div>
                 ) : displayedProducts.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {displayedProducts.map((product) => (
-                            <div
-                                key={product.id}
-                                onClick={() => setSelectedProduct(product)}
-                                className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
-                            >
-                                <div className="aspect-square relative">
-                                    <Image
-                                        src={product.image_url}
-                                        alt={product.name}
-                                        fill
-                                        className="object-cover"
-                                    />
+                        {displayedProducts
+                            .filter(product => !brokenImages.has(product.id))
+                            .map((product) => (
+                                <div
+                                    key={product.id}
+                                    onClick={() => setSelectedProduct(product)}
+                                    className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
+                                >
+                                    <div className="aspect-square relative bg-gray-100">
+                                        <Image
+                                            src={product.image_url}
+                                            alt={product.name}
+                                            fill
+                                            className="object-cover"
+                                            onError={() => {
+                                                console.error(`Failed to load image for product ${product.id}: ${product.image_url}`);
+                                                setBrokenImages(prev => new Set([...prev, product.id]));
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="p-4">
+                                        <h3 className="font-semibold text-gray-800 text-sm truncate mb-2">
+                                            {product.name}
+                                        </h3>
+                                        {getMatchBadge(product.similarity)}
+                                    </div>
                                 </div>
-                                <div className="p-4">
-                                    <h3 className="font-semibold text-gray-800 text-sm truncate mb-2">
-                                        {product.name}
-                                    </h3>
-                                    {getMatchBadge(product.similarity)}
-                                </div>
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 ) : (
                     <div className="text-center py-20">
