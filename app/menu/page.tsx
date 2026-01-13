@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FaHome, FaWhatsapp, FaInstagram, FaBars, FaTimes, FaSearch, FaPhone } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 
-export default function MenuPage() {
+import { Suspense } from 'react';
+
+function MenuPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isVisible, setIsVisible] = useState(true);
@@ -152,5 +154,13 @@ export default function MenuPage() {
             </main>
 
         </div>
+    );
+}
+
+export default function MenuPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-pink-100" />}>
+            <MenuPageContent />
+        </Suspense>
     );
 }

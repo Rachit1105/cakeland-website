@@ -1,11 +1,12 @@
 'use client';
+import { Suspense } from 'react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { FaWhatsapp, FaInstagram, FaSearch, FaHome, FaBook, FaBars, FaTimes, FaPhone } from 'react-icons/fa';
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [introComplete] = useState(true); // Skip intro, go straight to carousel
@@ -368,5 +369,13 @@ export default function Home() {
       )}
 
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-pink-100" />}>
+      <HomeContent />
+    </Suspense>
   );
 }

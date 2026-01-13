@@ -5,7 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FaHome, FaWhatsapp, FaInstagram, FaBars, FaTimes, FaBook, FaSearch, FaPhone } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 
-export default function AboutPage() {
+export const dynamic = 'force-dynamic';
+import { Suspense } from 'react';
+
+function AboutPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isVisible, setIsVisible] = useState(true);
@@ -145,5 +148,13 @@ export default function AboutPage() {
             </main>
 
         </div>
+    );
+}
+
+export default function AboutPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-pink-100" />}>
+            <AboutPageContent />
+        </Suspense>
     );
 }

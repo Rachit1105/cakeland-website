@@ -1,4 +1,5 @@
 'use client';
+import { Suspense } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -12,7 +13,7 @@ interface Product {
     similarity?: number;
 }
 
-export default function ExplorePage() {
+function ExplorePageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -548,5 +549,13 @@ export default function ExplorePage() {
             }
 
         </main >
+    );
+}
+
+export default function ExplorePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-pink-100" />}>
+            <ExplorePageContent />
+        </Suspense>
     );
 }
