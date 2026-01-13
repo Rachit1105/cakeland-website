@@ -220,13 +220,13 @@ export default function Home() {
 
 
       {introComplete && (
-        <div className="relative z-10 flex flex-col items-center justify-center flex-1 w-full max-w-5xl px-4 py-8 pt-28 md:pt-32">
+        <div className="relative z-10 flex flex-col items-center justify-center flex-1 w-full max-w-5xl px-4 py-8 pt-24 md:pt-28">
 
           {/* Pink Circle Accent */}
           <div className="absolute top-32 right-10 w-40 h-40 bg-pink-200/40 rounded-full -z-10"></div>
           <div className="absolute bottom-40 left-10 w-60 h-60 bg-pink-200/30 rounded-full -z-10"></div>
 
-          <div className="text-center mt-20 md:mt-16 relative w-full">
+          <div className="text-center mt-8 md:mt-4 relative w-full">
 
             {/* Carousel Container */}
             <div
