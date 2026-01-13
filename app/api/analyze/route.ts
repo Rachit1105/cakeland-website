@@ -1,47 +1,34 @@
 import { NextResponse } from 'next/server';
-import { pipeline, RawImage } from '@xenova/transformers';
 
-class Singleton {
-    // FIX: Change task to 'image-feature-extraction' to force image mode
-    static task = 'image-feature-extraction' as const;
-    static model = 'Xenova/clip-vit-large-patch14';
-    static instance: any = null;
-
-    static async getInstance(progress_callback?: Function) {
-        if (this.instance === null) {
-            this.instance = await pipeline(this.task, this.model, {
-                progress_callback: progress_callback || ((data: any) => {
-                    if (data.status === 'progress') {
-                        console.log(`Downloading ${data.file}: ${Math.round(data.progress || 0)}%`);
-                    }
-                }),
-            });
-        }
-        return this.instance;
-    }
-}
+const CLIP_API_URL = 'https://rachit1105-clip-embedding-api.hf.space';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
         const { imageUrl } = body;
 
-        if (!imageUrl) return NextResponse.json({ error: 'No URL provided' }, { status: 400 });
+        if (!imageUrl) {
+            return NextResponse.json({ error: 'Image URL is required' }, { status: 400 });
+        }
 
-        const embedder = await Singleton.getInstance();
+        // Call Hugging Face CLIP API for image embedding
+        const response = await fetch(`${CLIP_API_URL}/embed-image`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_url: imageUrl })
+        });
 
-        // 1. Read the image
-        const image = await RawImage.read(imageUrl);
+        if (!response.ok) {
+            throw new Error(`CLIP API error: ${response.statusText}`);
+        }
 
-        // 2. Analyze (Now safely uses the Image Processor)
-        const output = await embedder(image, { pooling: 'mean', normalize: true });
+        const data = await response.json();
 
-        const embedding = Array.from(output.data);
-
-        return NextResponse.json({ embedding });
+        // Return the 768-dimensional embedding
+        return NextResponse.json({ embedding: data.embedding });
 
     } catch (error) {
         console.error('AI Error:', error);
-        return NextResponse.json({ error: 'Failed to process image' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to analyze image' }, { status: 500 });
     }
 }
