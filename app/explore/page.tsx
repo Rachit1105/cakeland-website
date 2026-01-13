@@ -31,8 +31,9 @@ export default function ExplorePage() {
     const [dragOffset, setDragOffset] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
 
-    // Sync modal with URL
+    // Sync modal AND menu with URL
     useEffect(() => {
+        // 1. Sync Product Modal
         const productId = searchParams.get('product');
         if (productId && allProducts.length > 0) {
             const product = allProducts.find(p => p.id === parseInt(productId));
@@ -40,7 +41,28 @@ export default function ExplorePage() {
         } else {
             setSelectedProduct(null);
         }
+
+        // 2. Sync Mobile Menu
+        const isMenuOpen = searchParams.get('menu') === 'true';
+        setMenuOpen(isMenuOpen);
+
     }, [searchParams, allProducts]);
+
+    // Handle menu toggle
+    const toggleMenu = () => {
+        if (menuOpen) {
+            router.back();
+        } else {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('menu', 'true');
+            router.push(`?${params.toString()}`);
+        }
+    };
+
+    // Handle closing menu specifically (e.g. from links)
+    const closeMenu = () => {
+        if (menuOpen) router.back();
+    };
 
     // Handle product click - update URL
     const handleProductClick = (product: Product) => {
@@ -295,7 +317,7 @@ export default function ExplorePage() {
                         Home
                     </Link>
                     <div className="h-6 w-px bg-white/50"></div>
-                    <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 hover:bg-white/10 rounded transition">
+                    <button onClick={toggleMenu} className="p-2 hover:bg-white/10 rounded transition">
                         {menuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
                     </button>
                 </div>
@@ -305,14 +327,14 @@ export default function ExplorePage() {
             {menuOpen && (
                 <div
                     className="fixed inset-0 bg-black/50 z-20 md:hidden"
-                    onClick={() => setMenuOpen(false)}
+                    onClick={closeMenu}
                 />
             )}
 
             {/* Mobile Slide-out Menu */}
             <div className={`fixed top-20 right-0 w-64 bg-[#E46296] text-white shadow-xl z-30 transition-transform duration-300 md:hidden rounded-bl-2xl ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <nav className="flex flex-col p-6 gap-6">
-                    <Link href="/menu" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+                    <Link href="/menu" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
                         <FaBook size={20} />
                         <span className="font-semibold">Menu</span>
                     </Link>

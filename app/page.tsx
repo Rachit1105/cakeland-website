@@ -1,15 +1,40 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { FaWhatsapp, FaInstagram, FaSearch, FaHome, FaBook, FaBars, FaTimes, FaPhone } from 'react-icons/fa';
 
 export default function Home() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [introComplete] = useState(true); // Skip intro, go straight to carousel
   const [currentSlide, setCurrentSlide] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+
+  // Sync Mobile Menu with URL
+  useEffect(() => {
+    const isMenuOpen = searchParams.get('menu') === 'true';
+    setMenuOpen(isMenuOpen);
+  }, [searchParams]);
+
+  // Handle menu toggle
+  const toggleMenu = () => {
+    if (menuOpen) {
+      router.back();
+    } else {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('menu', 'true');
+      router.push(`?${params.toString()}`);
+    }
+  };
+
+  // Handle closing menu
+  const closeMenu = () => {
+    if (menuOpen) router.back();
+  };
 
   const slides = [
     {
@@ -180,7 +205,7 @@ export default function Home() {
             Explore
           </Link>
           <div className="h-6 w-px bg-white/50"></div>
-          <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 hover:bg-white/10 rounded transition">
+          <button onClick={toggleMenu} className="p-2 hover:bg-white/10 rounded transition">
             {menuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
           </button>
         </div>
@@ -190,14 +215,14 @@ export default function Home() {
       {menuOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-20 md:hidden"
-          onClick={() => setMenuOpen(false)}
+          onClick={closeMenu}
         />
       )}
 
       {/* Mobile Slide-out Menu */}
       <div className={`fixed top-20 right-0 w-64 bg-[#E46296] text-white shadow-xl z-30 transition-transform duration-300 md:hidden rounded-bl-2xl ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <nav className="flex flex-col p-6 gap-6">
-          <Link href="/menu" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+          <Link href="/menu" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
             <FaBook size={20} />
             <span className="font-semibold">Menu</span>
           </Link>
