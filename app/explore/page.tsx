@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaWhatsapp, FaInstagram, FaSearch, FaTimes, FaHome } from 'react-icons/fa';
+import { FaHome, FaWhatsapp, FaInstagram, FaBars, FaTimes, FaBook, FaPhone, FaSearch } from 'react-icons/fa';
 
 interface Product {
     id: number;
@@ -21,6 +21,7 @@ export default function ExplorePage() {
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
+    const [menuOpen, setMenuOpen] = useState(false);
 
     // Scroll detection for header
     useEffect(() => {
@@ -125,10 +126,10 @@ export default function ExplorePage() {
         <main className="min-h-screen bg-gradient-to-br from-pink-200 via-pink-100 to-white">
 
             {/* Navigation */}
-            <nav className={`bg-[#E46296] h-20 md:h-24 sticky top-0 z-40 shadow-md px-6 md:px-10 flex justify-between items-center transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+            <nav className={`bg-[#E46296] h-20 md:h-24 sticky top-0 z-40 shadow-md px-2 md:px-10 flex justify-between items-center transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
                 }`}>
                 <Link href="/" className="flex items-center">
-                    <div className="w-48 h-16 md:w-56 md:h-20 relative">
+                    <div className="w-44 h-16 md:w-56 md:h-20 relative -ml-2 md:ml-0">
                         <Image
                             src="/Cakeland.png"
                             alt="Cakeland Logo"
@@ -137,20 +138,66 @@ export default function ExplorePage() {
                         />
                     </div>
                 </Link>
-                <div className="flex items-center gap-5 text-white">
-                    <Link href="/" className="font-semibold uppercase text-sm tracking-wide hover:underline transition flex items-center gap-2">
-                        <FaHome size={16} />
+
+                {/* Desktop Navigation */}
+                <div className="hidden md:flex items-center gap-3 md:gap-6 text-white">
+                    <Link href="/" className="flex items-center gap-1.5 md:gap-2 font-semibold text-xs md:text-sm tracking-wide hover:underline transition">
+                        <FaHome size={14} className="md:w-4 md:h-4" />
+                        <span className="hidden sm:inline">Home</span>
+                    </Link>
+                    <div className="h-4 md:h-6 w-px bg-white/50"></div>
+                    <a href="https://wa.me/919883414650" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition">
+                        <FaWhatsapp size={20} className="md:w-6 md:h-6" />
+                    </a>
+                    <a href="https://instagram.com/cakelandkolkata" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition">
+                        <FaInstagram size={20} className="md:w-6 md:h-6" />
+                    </a>
+                </div>
+
+                {/* Mobile Navigation */}
+                <div className="flex md:hidden items-center gap-3 text-white">
+                    <Link href="/" className="font-semibold text-base tracking-wide hover:underline transition flex items-center gap-2">
+                        <FaHome size={18} />
                         Home
                     </Link>
                     <div className="h-6 w-px bg-white/50"></div>
-                    <a href="https://wa.me/919883414650" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition text-white">
-                        <FaWhatsapp size={24} />
-                    </a>
-                    <a href="https://instagram.com/cakelandkolkata" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition text-white">
-                        <FaInstagram size={24} />
-                    </a>
+                    <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 hover:bg-white/10 rounded transition">
+                        {menuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+                    </button>
                 </div>
             </nav>
+
+            {/* Mobile Menu Backdrop */}
+            {menuOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-20 md:hidden"
+                    onClick={() => setMenuOpen(false)}
+                />
+            )}
+
+            {/* Mobile Slide-out Menu */}
+            <div className={`fixed top-20 right-0 w-64 bg-[#E46296] text-white shadow-xl z-30 transition-transform duration-300 md:hidden rounded-bl-2xl ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                <nav className="flex flex-col p-6 gap-6">
+                    <Link href="/menu" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+                        <FaBook size={20} />
+                        <span className="font-semibold">Menu</span>
+                    </Link>
+                    <div className="h-px bg-white/30"></div>
+                    <a href="https://wa.me/919883414650" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+                        <FaWhatsapp size={20} />
+                        <span className="font-semibold">WhatsApp</span>
+                    </a>
+                    <a href="https://instagram.com/cakelandkolkata" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+                        <FaInstagram size={20} />
+                        <span className="font-semibold">Instagram</span>
+                    </a>
+                    <div className="h-px bg-white/30"></div>
+                    <a href="tel:+919883414650" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+                        <FaPhone size={20} />
+                        <span className="font-semibold">Call Us</span>
+                    </a>
+                </nav>
+            </div>
 
             {/* Search Bar */}
             <div className="max-w-7xl mx-auto px-4 py-8">
