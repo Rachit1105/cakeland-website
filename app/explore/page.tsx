@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FaHome, FaWhatsapp, FaInstagram, FaBars, FaTimes, FaBook, FaPhone, FaSearch } from 'react-icons/fa';
 
 interface Product {
@@ -12,6 +13,8 @@ interface Product {
 }
 
 export default function ExplorePage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -22,6 +25,34 @@ export default function ExplorePage() {
     const [lastScrollY, setLastScrollY] = useState(0);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
     const [menuOpen, setMenuOpen] = useState(false);
+    const [imageZoom, setImageZoom] = useState(1);
+    const [touchStart, setTouchStart] = useState(0);
+    const [touchEnd, setTouchEnd] = useState(0);
+    const [dragOffset, setDragOffset] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+
+    // Sync modal with URL
+    useEffect(() => {
+        const productId = searchParams.get('product');
+        if (productId && allProducts.length > 0) {
+            const product = allProducts.find(p => p.id === parseInt(productId));
+            if (product) setSelectedProduct(product);
+        } else {
+            setSelectedProduct(null);
+        }
+    }, [searchParams, allProducts]);
+
+    // Handle product click - update URL
+    const handleProductClick = (product: Product) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('product', product.id.toString());
+        router.push(`?${params.toString()}`, { scroll: false });
+    };
+
+    // Close modal - go back in history to remove param
+    const closeModal = () => {
+        router.back();
+    };
 
     // Scroll detection for header
     useEffect(() => {
@@ -117,9 +148,112 @@ export default function ExplorePage() {
         }
     };
 
-    const openWhatsApp = (productName: string) => {
-        const message = encodeURIComponent(`Hi! I'd like to order: ${productName}`);
+    const openWhatsApp = (cakeName: string) => {
+        const message = encodeURIComponent(`Hi! I'm interested in ordering "${cakeName}". Can you provide more details?`);
         window.open(`https://wa.me/919883414650?text=${message}`, '_blank');
+    };
+
+    // Navigate to next/previous product
+    const navigateProduct = (direction: 'next' | 'prev') => {
+        if (!selectedProduct) return;
+
+        const currentIndex = displayedProducts.findIndex(p => p.id === selectedProduct.id);
+        let newIndex;
+
+        if (direction === 'next') {
+            newIndex = (currentIndex + 1) % displayedProducts.length;
+        } else {
+            newIndex = (currentIndex - 1 + displayedProducts.length) % displayedProducts.length;
+        }
+
+        const nextProduct = displayedProducts[newIndex];
+        setSelectedProduct(nextProduct);
+
+        // Update URL without adding to history stack
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('product', nextProduct.id.toString());
+        router.replace(`?${params.toString()}`, { scroll: false });
+
+        setImageZoom(1); // Reset zoom when changing images
+        setDragOffset(0); // Reset drag offset
+        setIsDragging(false);
+    };
+
+    // Keyboard navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!selectedProduct) return;
+
+            if (e.key === 'Escape') {
+                setSelectedProduct(null);
+                setImageZoom(1);
+            } else if (e.key === 'ArrowRight') {
+                navigateProduct('next');
+            } else if (e.key === 'ArrowLeft') {
+                navigateProduct('prev');
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedProduct, displayedProducts]);
+
+    // Zoom handlers
+    const handleZoomIn = () => setImageZoom(prev => Math.min(prev + 0.5, 3));
+    const handleZoomOut = () => setImageZoom(prev => Math.max(prev - 0.5, 1));
+    const resetZoom = () => setImageZoom(1);
+
+    // Get adjacent products for carousel
+    const getCurrentIndex = () => {
+        if (!selectedProduct) return -1;
+        return displayedProducts.findIndex(p => p.id === selectedProduct.id);
+    };
+
+    const getPrevProduct = () => {
+        const currentIndex = getCurrentIndex();
+        if (currentIndex === -1) return null;
+        const prevIndex = (currentIndex - 1 + displayedProducts.length) % displayedProducts.length;
+        return displayedProducts[prevIndex];
+    };
+
+    const getNextProduct = () => {
+        const currentIndex = getCurrentIndex();
+        if (currentIndex === -1) return null;
+        const nextIndex = (currentIndex + 1) % displayedProducts.length;
+        return displayedProducts[nextIndex];
+    };
+
+    // Swipe handlers for modal
+    const handleSwipeStart = (clientX: number) => {
+        setTouchStart(clientX);
+        setTouchEnd(clientX);
+        setIsDragging(true);
+    };
+
+    const handleSwipeMove = (clientX: number) => {
+        if (!isDragging || !touchStart) return;
+        setTouchEnd(clientX);
+        const diff = clientX - touchStart;
+        setDragOffset(diff);
+    };
+
+    const handleSwipeEnd = () => {
+        if (!touchStart || !touchEnd) return;
+
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > 10;  // Reduced from 30 to 10
+        const isRightSwipe = distance < -10; // Reduced from 30 to 10
+
+        if (isLeftSwipe) {
+            navigateProduct('next');
+        } else if (isRightSwipe) {
+            navigateProduct('prev');
+        }
+
+        setTouchStart(0);
+        setTouchEnd(0);
+        setDragOffset(0);
+        setIsDragging(false);
     };
 
     return (
@@ -237,14 +371,14 @@ export default function ExplorePage() {
             {/* Products Grid */}
             <div className="max-w-7xl mx-auto px-4 pb-20">
                 {isLoading ? (
-                    // Skeleton Loading
+                    // Enhanced Skeleton Loading with Shimmer
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {[...Array(12)].map((_, i) => (
-                            <div key={i} className="bg-white rounded-xl overflow-hidden shadow-lg animate-pulse">
-                                <div className="aspect-square bg-gray-200"></div>
+                            <div key={i} className="bg-white rounded-xl overflow-hidden shadow-lg">
+                                <div className="aspect-square bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
                                 <div className="p-4">
-                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                    <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%] rounded w-3/4 mb-2"></div>
+                                    <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%] rounded w-1/2"></div>
                                 </div>
                             </div>
                         ))}
@@ -256,7 +390,7 @@ export default function ExplorePage() {
                             .map((product) => (
                                 <div
                                     key={product.id}
-                                    onClick={() => setSelectedProduct(product)}
+                                    onClick={() => handleProductClick(product)}
                                     className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
                                 >
                                     <div className="aspect-square relative bg-gray-100">
@@ -265,18 +399,14 @@ export default function ExplorePage() {
                                             alt={product.name}
                                             fill
                                             className="object-cover"
+                                            loading="lazy"
                                             onError={() => {
                                                 console.error(`Failed to load image for product ${product.id}: ${product.image_url}`);
                                                 setBrokenImages(prev => new Set([...prev, product.id]));
                                             }}
                                         />
                                     </div>
-                                    <div className="p-4">
-                                        <h3 className="font-semibold text-gray-800 text-sm truncate mb-2">
-                                            {product.name}
-                                        </h3>
-                                        {getMatchBadge(product.similarity)}
-                                    </div>
+                                    {/* Removed product name and match badge from grid */}
                                 </div>
                             ))}
                     </div>
@@ -287,46 +417,107 @@ export default function ExplorePage() {
                 )}
             </div>
 
-            {/* Modal */}
+            {/* Simplified Modal - No Carousel */}
             {
                 selectedProduct && (
                     <div
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                        onClick={() => setSelectedProduct(null)}
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => {
+                            closeModal();
+                            resetZoom();
+                        }}
                     >
                         <div
-                            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+                            className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-auto"
                             onClick={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => handleSwipeStart(e.touches[0].clientX)}
+                            onTouchMove={(e) => handleSwipeMove(e.touches[0].clientX)}
+                            onTouchEnd={() => handleSwipeEnd()}
                         >
-                            <div className="relative aspect-square">
+                            {/* Image Section */}
+                            <div className="relative aspect-square bg-gray-100">
                                 <Image
                                     src={selectedProduct.image_url}
                                     alt={selectedProduct.name}
                                     fill
-                                    className="object-cover rounded-t-2xl"
+                                    className="object-contain transition-transform duration-200"
+                                    style={{ transform: `scale(${imageZoom})` }}
                                 />
+
+                                {/* Close Button */}
                                 <button
-                                    onClick={() => setSelectedProduct(null)}
-                                    className="absolute top-4 right-4 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition"
+                                    onClick={() => {
+                                        closeModal();
+                                        resetZoom();
+                                    }}
+                                    className="absolute top-4 right-4 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition z-10"
                                 >
                                     <FaTimes className="text-gray-700" size={20} />
                                 </button>
+
+                                {/* Navigation Arrows */}
+                                <button
+                                    onClick={() => navigateProduct('prev')}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition"
+                                >
+                                    <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={() => navigateProduct('next')}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition"
+                                >
+                                    <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+
+                                {/* Zoom Controls */}
+                                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                                    <button
+                                        onClick={handleZoomIn}
+                                        disabled={imageZoom >= 3}
+                                        className="bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition disabled:opacity-50"
+                                    >
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onClick={handleZoomOut}
+                                        disabled={imageZoom <= 1}
+                                        className="bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition disabled:opacity-50"
+                                    >
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                                        </svg>
+                                    </button>
+                                    {imageZoom > 1 && (
+                                        <button
+                                            onClick={resetZoom}
+                                            className="bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition text-xs font-semibold text-gray-700"
+                                        >
+                                            1x
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="p-8">
-                                <h2 className="text-3xl font-bold text-gray-800 mb-4">{selectedProduct.name}</h2>
-                                {getMatchBadge(selectedProduct.similarity)}
-
+                            {/* Bottom Section */}
+                            <div className="p-6">
                                 <button
                                     onClick={() => openWhatsApp(selectedProduct.name)}
-                                    className="mt-6 w-full bg-[#25D366] hover:bg-[#1fb855] text-white font-semibold py-4 px-6 rounded-full flex items-center justify-center gap-3 transition-all transform hover:scale-105 shadow-lg"
+                                    className="w-full bg-[#25D366] hover:bg-[#1fb855] text-white font-semibold py-4 px-6 rounded-full flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg"
                                 >
                                     <FaWhatsapp size={24} />
                                     Order on WhatsApp
                                 </button>
-
                                 <p className="mt-4 text-center text-sm text-gray-500">
                                     We'll help you customize this design!
+                                </p>
+                                <p className="mt-2 text-center text-xs text-gray-400">
+                                    Swipe or use ← → arrows • ESC to close
                                 </p>
                             </div>
                         </div>
