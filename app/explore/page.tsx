@@ -104,8 +104,12 @@ function ExplorePageContent() {
     useEffect(() => {
         if (!searchQuery.trim()) {
             setDisplayedProducts(allProducts);
+            setIsSearching(false);
             return;
         }
+
+        // Set searching state immediately when user types
+        setIsSearching(true);
 
         const timer = setTimeout(() => {
             performSearch(searchQuery);
@@ -391,7 +395,11 @@ function ExplorePageContent() {
 
                 {searchQuery && (
                     <p className="text-center mt-4 text-gray-600">
-                        Showing {displayedProducts.length} results for "<span className="font-semibold text-[#E46296]">{searchQuery}</span>"
+                        {isSearching ? (
+                            <>✨ Searching for cakes with AI...</>
+                        ) : (
+                            <>Showing {displayedProducts.length} results for "<span className="font-semibold text-[#E46296]">{searchQuery}</span>"</>
+                        )}
                     </p>
                 )}
             </div>
