@@ -58,7 +58,9 @@ function ProductPageContent() {
     const openWhatsApp = () => {
         if (!product) return;
 
-        const productUrl = `${window.location.origin}/cake/${product.id}`;
+        // Use window.location safely (only available client-side)
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://cakeland-website.vercel.app';
+        const productUrl = `${baseUrl}/cake/${product.id}`;
         const message = encodeURIComponent(
             `Hi! I'm interested in ordering "${product.name}".\n\n` +
             `View Product: ${productUrl}\n\n` +
