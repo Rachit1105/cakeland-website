@@ -1,10 +1,10 @@
 'use client';
 import { Suspense } from 'react';
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaWhatsapp, FaHome, FaArrowLeft } from 'react-icons/fa';
+import { FaWhatsapp, FaInstagram, FaHome, FaBars, FaTimes, FaBook, FaPhone, FaSearch, FaArrowLeft } from 'react-icons/fa';
 import { supabase } from '../../../utils/supabase';
 
 interface Product {
@@ -16,9 +16,33 @@ interface Product {
 function ProductPageContent() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    // Sync Mobile Menu with URL
+    useEffect(() => {
+        const isMenuOpen = searchParams.get('menu') === 'true';
+        setMenuOpen(isMenuOpen);
+    }, [searchParams]);
+
+    // Handle menu toggle
+    const toggleMenu = () => {
+        if (menuOpen) {
+            router.back();
+        } else {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('menu', 'true');
+            router.push(`?${params.toString()}`);
+        }
+    };
+
+    // Handle closing menu
+    const closeMenu = () => {
+        if (menuOpen) router.back();
+    };
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -129,10 +153,10 @@ function ProductPageContent() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-pink-200 via-pink-100 to-white flex flex-col">
-            {/* Header */}
-            <nav className="bg-[#E46296] h-20 md:h-24 px-4 md:px-10 flex items-center justify-between shadow-md">
+            {/* NAVIGATION BAR */}
+            <nav className="bg-[#E46296] h-20 md:h-24 px-2 md:px-10 text-white flex justify-between items-center sticky top-0 z-50 shadow-md">
                 <Link href="/" className="flex items-center">
-                    <div className="w-44 h-16 md:w-56 md:h-20 relative">
+                    <div className="w-44 h-16 md:w-56 md:h-20 relative -ml-2 md:ml-0">
                         <Image
                             src="/Cakeland.png"
                             alt="Cakeland Logo"
@@ -141,14 +165,70 @@ function ProductPageContent() {
                         />
                     </div>
                 </Link>
-                <Link
-                    href="/explore"
-                    className="flex items-center gap-2 text-white hover:underline transition text-sm md:text-base"
-                >
-                    <FaHome size={18} />
-                    <span className="hidden sm:inline">Browse All Cakes</span>
-                </Link>
+
+                {/* Desktop Navigation */}
+                <div className="hidden md:flex items-center gap-3 md:gap-6">
+                    <Link href="/" className="flex items-center gap-1.5 md:gap-2 font-semibold text-xs md:text-sm tracking-wide hover:underline transition">
+                        <FaHome size={14} className="md:w-4 md:h-4" />
+                        <span className="hidden sm:inline">Home</span>
+                    </Link>
+                    <div className="h-4 md:h-6 w-px bg-white/50"></div>
+                    <a href="https://wa.me/919883414650" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition">
+                        <FaWhatsapp size={20} className="md:w-6 md:h-6" />
+                    </a>
+                    <a href="https://instagram.com/cakelandkolkata" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition">
+                        <FaInstagram size={20} className="md:w-6 md:h-6" />
+                    </a>
+                </div>
+
+                {/* Mobile Navigation */}
+                <div className="flex md:hidden items-center gap-3">
+                    <Link href="/" className="font-semibold text-base tracking-wide hover:underline transition flex items-center gap-2">
+                        <FaHome size={18} />
+                        Home
+                    </Link>
+                    <div className="h-6 w-px bg-white/50"></div>
+                    <button onClick={toggleMenu} className="p-2 hover:bg-white/10 rounded transition">
+                        {menuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+                    </button>
+                </div>
             </nav>
+
+            {/* Mobile Menu Backdrop */}
+            {menuOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-20 md:hidden"
+                    onClick={closeMenu}
+                />
+            )}
+
+            {/* Mobile Slide-out Menu */}
+            <div className={`fixed top-20 right-0 w-64 bg-[#E46296] text-white shadow-xl z-30 transition-transform duration-300 md:hidden rounded-bl-2xl ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                <nav className="flex flex-col p-6 gap-6">
+                    <Link href="/menu" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+                        <FaBook size={20} />
+                        <span className="font-semibold">Menu</span>
+                    </Link>
+                    <Link href="/explore" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+                        <FaSearch size={20} />
+                        <span className="font-semibold">Explore</span>
+                    </Link>
+                    <div className="h-px bg-white/30"></div>
+                    <a href="https://wa.me/919883414650" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+                        <FaWhatsapp size={20} />
+                        <span className="font-semibold">WhatsApp</span>
+                    </a>
+                    <a href="https://instagram.com/cakelandkolkata" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+                        <FaInstagram size={20} />
+                        <span className="font-semibold">Instagram</span>
+                    </a>
+                    <div className="h-px bg-white/30"></div>
+                    <a href="tel:+919883414650" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
+                        <FaPhone size={20} />
+                        <span className="font-semibold">Call Us</span>
+                    </a>
+                </nav>
+            </div>
 
             {/* Main Content */}
             <main className="flex-1 flex items-center justify-center p-4 md:p-8">
@@ -167,9 +247,6 @@ function ProductPageContent() {
 
                         {/* Details Section */}
                         <div className="p-6 md:p-10 flex flex-col justify-center">
-                            <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#E46296] mb-6">
-                                {product.name}
-                            </h1>
 
                             <div className="mb-8">
                                 <p className="text-gray-600 text-base leading-relaxed">
