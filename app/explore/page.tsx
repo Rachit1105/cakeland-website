@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaHome, FaWhatsapp, FaInstagram, FaBars, FaTimes, FaBook, FaPhone, FaSearch } from 'react-icons/fa';
+import { getThumbnailUrl, getLargeImageUrl } from '@/utils/imageHelpers';
 
 interface Product {
     id: number;
@@ -434,11 +435,12 @@ function ExplorePageContent() {
                                             <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
                                         )}
                                         <Image
-                                            src={product.image_url}
+                                            src={getThumbnailUrl(product.image_url)}
                                             alt={product.name}
                                             fill
                                             className="object-cover"
                                             loading="lazy"
+                                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                                             onLoad={() => {
                                                 setLoadedImages(prev => new Set([...prev, product.id]));
                                             }}
@@ -479,11 +481,13 @@ function ExplorePageContent() {
                             {/* Image Section */}
                             <div className="relative aspect-square bg-gray-100">
                                 <Image
-                                    src={selectedProduct.image_url}
+                                    src={getLargeImageUrl(selectedProduct.image_url)}
                                     alt={selectedProduct.name}
                                     fill
                                     className="object-contain transition-transform duration-200"
                                     style={{ transform: `scale(${imageZoom})` }}
+                                    sizes="100vw"
+                                    priority
                                 />
 
                                 {/* Close Button */}

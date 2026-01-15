@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FaWhatsapp, FaInstagram, FaHome, FaBars, FaTimes, FaBook, FaPhone, FaSearch, FaArrowLeft } from 'react-icons/fa';
 import { supabase } from '../../../utils/supabase';
+import { getLargeImageUrl } from '@/utils/imageHelpers';
 
 interface Product {
     id: number;
@@ -237,11 +238,12 @@ function ProductPageContent() {
                         {/* Image Section */}
                         <div className="relative aspect-square bg-gray-100">
                             <Image
-                                src={product.image_url}
+                                src={getLargeImageUrl(product.image_url)}
                                 alt={product.name}
                                 fill
                                 className="object-cover"
                                 priority
+                                sizes="(max-width: 768px) 100vw, 50vw"
                             />
                         </div>
 
