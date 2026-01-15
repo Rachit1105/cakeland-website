@@ -33,6 +33,22 @@ function ExplorePageContent() {
     const [touchEnd, setTouchEnd] = useState(0);
     const [dragOffset, setDragOffset] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect if device is mobile for optimized loading
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768); // Mobile breakpoint
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Device-specific image loading threshold
+    // Mobile: Load 10 images initially, Desktop/Tablet: 20 images
+    const eagerLoadCount = isMobile ? 10 : 20;
 
     // Sync modal AND menu with URL
     useEffect(() => {
@@ -423,7 +439,7 @@ function ExplorePageContent() {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {displayedProducts
                             .filter(product => !brokenImages.has(product.id))
-                            .map((product) => (
+                            .map((product, index) => (
                                 <div
                                     key={product.id}
                                     onClick={() => handleProductClick(product)}
@@ -439,7 +455,7 @@ function ExplorePageContent() {
                                             alt={product.name}
                                             fill
                                             className="object-cover"
-                                            loading="lazy"
+                                            loading={index < eagerLoadCount ? 'eager' : 'lazy'}
                                             sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                                             onLoad={() => {
                                                 setLoadedImages(prev => new Set([...prev, product.id]));
