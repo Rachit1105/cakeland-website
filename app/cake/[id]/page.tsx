@@ -62,9 +62,11 @@ function ProductPageContent() {
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://cakeland-website.vercel.app';
         const productUrl = `${baseUrl}/cake/${product.id}`;
         const message = encodeURIComponent(
-            `Hi! I'm interested in ordering "${product.name}".\n\n` +
-            `View Product: ${productUrl}\n\n` +
-            `Can you provide more details about this cake?`
+            `Hi Cakeland 👋🍰\n\n` +
+            `I came across this cake design on your website and I'm interested in ordering it.\n` +
+            `Reference Link: ${productUrl}\n\n` +
+            `Could you please share the available sizes, pricing, and customization options?\n\n` +
+            `Looking forward to your reply 😊`
         );
         window.open(`https://wa.me/919883414650?text=${message}`, '_blank');
     };
