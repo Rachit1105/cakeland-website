@@ -351,7 +351,7 @@ function HomeContent() {
             </div>
 
             {/* Carousel Dots Navigation */}
-            <div className="flex justify-center gap-3 mt-8">
+            <div className="flex justify-center gap-3 mt-16">
               {slides.map((_, index) => (
                 <button
                   key={index}

@@ -25,6 +25,7 @@ function ExplorePageContent() {
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
+    const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
     const [menuOpen, setMenuOpen] = useState(false);
     const [imageZoom, setImageZoom] = useState(1);
     const [touchStart, setTouchStart] = useState(0);
@@ -426,12 +427,19 @@ function ExplorePageContent() {
                                     className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
                                 >
                                     <div className="aspect-square relative bg-gray-100">
+                                        {/* Skeleton while loading */}
+                                        {!loadedImages.has(product.id) && (
+                                            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+                                        )}
                                         <Image
                                             src={product.image_url}
                                             alt={product.name}
                                             fill
                                             className="object-cover"
                                             loading="lazy"
+                                            onLoad={() => {
+                                                setLoadedImages(prev => new Set([...prev, product.id]));
+                                            }}
                                             onError={() => {
                                                 console.error(`Failed to load image for product ${product.id}: ${product.image_url}`);
                                                 setBrokenImages(prev => new Set([...prev, product.id]));
