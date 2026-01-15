@@ -171,10 +171,11 @@ function ExplorePageContent() {
         }
     };
 
-    const openWhatsApp = (cakeName: string, imageUrl: string) => {
+    const openWhatsApp = (cakeName: string, productId: number) => {
+        const productUrl = `${window.location.origin}/cake/${productId}`;
         const message = encodeURIComponent(
             `Hi! I'm interested in ordering "${cakeName}".\n\n` +
-            `Product Image: ${imageUrl}\n\n` +
+            `View Product: ${productUrl}\n\n` +
             `Can you provide more details about this cake?`
         );
         window.open(`https://wa.me/919883414650?text=${message}`, '_blank');
@@ -534,7 +535,7 @@ function ExplorePageContent() {
                             {/* Bottom Section */}
                             <div className="p-6">
                                 <button
-                                    onClick={() => openWhatsApp(selectedProduct.name, selectedProduct.image_url)}
+                                    onClick={() => openWhatsApp(selectedProduct.name, selectedProduct.id)}
                                     className="w-full bg-[#25D366] hover:bg-[#1fb855] text-white font-semibold py-4 px-6 rounded-full flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg"
                                 >
                                     <FaWhatsapp size={24} />
