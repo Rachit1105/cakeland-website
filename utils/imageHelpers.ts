@@ -1,65 +1,33 @@
 /**
- * Image URL Helper Utilities
+ * Get thumbnail URL - uses pre-made thumbnail if available, 
+ * otherwise falls back to Cloudinary transformation
  * 
- * These functions generate Supabase Storage Image Transform URLs
- * to serve optimized images without modifying the originals.
- * 
- * @see https://supabase.com/docs/guides/storage/serving/image-transformations
+ * @param imageUrl - Original image URL
+ * @param thumbnailUrl - Pre-made thumbnail URL (optional)
+ * @returns Thumbnail URL
  */
-
-/**
- * Generates a thumbnail URL optimized for grid view
- * - Size: 400x400 (cover mode)
- * - Quality: 60%
- * - Target file size: ~50-100KB
- * 
- * @param imageUrl - Original Supabase storage URL
- * @returns Transformed URL with query parameters
- */
-export function getThumbnailUrl(imageUrl: string): string {
-    try {
-        const url = new URL(imageUrl);
-
-        // CRITICAL: Supabase requires /render/image/ instead of /object/ for transformations
-        const transformedPath = url.pathname.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
-        url.pathname = transformedPath;
-
-        url.searchParams.set('width', '400');
-        url.searchParams.set('height', '400');
-        url.searchParams.set('resize', 'cover');
-        url.searchParams.set('quality', '60');
-        return url.toString();
-    } catch (error) {
-        // If URL parsing fails, return original
-        console.error('Failed to parse image URL:', error);
-        return imageUrl;
+export function getThumbnailUrl(imageUrl: string, thumbnailUrl?: string | null): string {
+    // Use pre-made thumbnail if available (no transformation quota used!)
+    if (thumbnailUrl) {
+        return thumbnailUrl;
     }
+
+    // Fallback: Check if it's a Cloudinary URL and apply transformation
+    if (imageUrl.includes('res.cloudinary.com')) {
+        // Use 'c_fill' to fill the space while maintaining aspect ratio
+        // ar_1:1 forces square aspect ratio, g_auto finds the best crop area
+        return imageUrl.replace('/upload/', '/upload/w_400,h_400,c_fill,g_auto,q_60,f_auto/');
+    }
+
+    // Final fallback: return original
+    return imageUrl;
 }
 
 /**
- * Generates a large image URL optimized for modal/detail view
- * - Width: 1200px (maintain aspect ratio)
- * - Quality: 75%
- * - Target file size: ~100-200KB
- * 
- * @param imageUrl - Original Supabase storage URL
- * @returns Transformed URL with query parameters
+ * Generate Cloudinary large image URL for modal view
+ * Returns original image (no transformations)
  */
 export function getLargeImageUrl(imageUrl: string): string {
-    try {
-        const url = new URL(imageUrl);
-
-        // CRITICAL: Supabase requires /render/image/ instead of /object/ for transformations
-        const transformedPath = url.pathname.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
-        url.pathname = transformedPath;
-
-        url.searchParams.set('width', '1200');
-        url.searchParams.set('resize', 'contain');
-        url.searchParams.set('quality', '75');
-        return url.toString();
-    } catch (error) {
-        // If URL parsing fails, return original
-        console.error('Failed to parse image URL:', error);
-        return imageUrl;
-    }
+    // For modal view, always use original high-quality image
+    return imageUrl;
 }

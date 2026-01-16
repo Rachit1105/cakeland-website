@@ -11,6 +11,7 @@ interface Product {
     id: number;
     name: string;
     image_url: string;
+    thumbnail_url?: string | null; // Pre-made thumbnail
     similarity?: number;
 }
 
@@ -512,7 +513,7 @@ function ExplorePageContent() {
                                             <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
                                         )}
                                         <Image
-                                            src={getThumbnailUrl(product.image_url)}
+                                            src={getThumbnailUrl(product.image_url, product.thumbnail_url)}
                                             alt={product.name}
                                             fill
                                             className="object-cover"
