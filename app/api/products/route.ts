@@ -19,10 +19,10 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Failed to count products' }, { status: 500 });
         }
 
-        // Get paginated products
+        // Get paginated products (with thumbnail URLs for faster loading)
         const { data: products, error } = await supabase
             .from('products')
-            .select('id, name, image_url')
+            .select('id, name, image_url, thumbnail_url')
             .not('embedding', 'is', null)
             .order('id', { ascending: false })
             .range(offset, offset + limit - 1);

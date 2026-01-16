@@ -176,7 +176,7 @@ function ExplorePageContent() {
     const loadAllProducts = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/products?page=1&limit=40');
+            const response = await fetch('/api/products?page=1&limit=12');
             if (response.ok) {
                 const data = await response.json();
                 setAllProducts(data.products || []);
@@ -199,7 +199,7 @@ function ExplorePageContent() {
         setIsLoadingMore(true);
         try {
             const nextPage = currentPage + 1;
-            const response = await fetch(`/api/products?page=${nextPage}&limit=40`);
+            const response = await fetch(`/api/products?page=${nextPage}&limit=24`);
             if (response.ok) {
                 const data = await response.json();
                 setAllProducts(prev => [...prev, ...(data.products || [])]);
