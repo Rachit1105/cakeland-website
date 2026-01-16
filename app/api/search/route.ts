@@ -52,7 +52,7 @@ export async function POST(request: Request) {
             // Fallback: try direct query if RPC doesn't exist
             const { data: allProducts, error: fallbackError } = await supabase
                 .from('products')
-                .select('*')
+                .select('id, name, image_url, thumbnail_url, embedding')
                 .not('embedding', 'is', null);
 
             if (fallbackError) {
