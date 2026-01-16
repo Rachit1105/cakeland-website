@@ -61,8 +61,10 @@ function ExplorePageContent() {
     useEffect(() => {
         // 1. Sync Product Modal
         const productId = searchParams.get('product');
-        if (productId && allProducts.length > 0) {
-            const product = allProducts.find(p => p.id === parseInt(productId));
+        if (productId) {
+            // Check finding in allProducts OR displayedProducts (for search results)
+            const product = allProducts.find(p => p.id === parseInt(productId))
+                || displayedProducts.find(p => p.id === parseInt(productId));
             if (product) setSelectedProduct(product);
         } else {
             setSelectedProduct(null);
@@ -587,7 +589,8 @@ function ExplorePageContent() {
 
                                 {/* Close Button */}
                                 <button
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         closeModal();
                                         resetZoom();
                                     }}
