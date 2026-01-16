@@ -79,18 +79,30 @@ export default function AdminGalleryPage() {
         setSelectedIds(new Set());
     };
 
-    // Long press for mobile
-    const handleTouchStart = (productId: string) => {
+    // Long press for mobile - enters selection mode
+    const handleTouchStart = (productId: string, e: React.TouchEvent) => {
+        // Prevent context menu from appearing
+        e.preventDefault();
+
+        // If already in selection mode (selectedIds > 0), don't set timer
+        if (selectedIds.size > 0) {
+            return; // Just tap will handle it
+        }
+
         const timer = setTimeout(() => {
             toggleSelection(productId);
         }, 600); // 600ms long press
         setLongPressTimer(timer);
     };
 
-    const handleTouchEnd = () => {
+    const handleTouchEnd = (productId: string) => {
         if (longPressTimer) {
+            // Cancel long press if finger lifted too early
             clearTimeout(longPressTimer);
             setLongPressTimer(null);
+        } else if (selectedIds.size > 0) {
+            // In selection mode - tap toggles selection (any image)
+            toggleSelection(productId);
         }
     };
 
@@ -210,9 +222,10 @@ export default function AdminGalleryPage() {
                                 key={product.id}
                                 className="relative aspect-square cursor-pointer group"
                                 onClick={() => !isMobile && toggleSelection(product.id)}
-                                onTouchStart={() => isMobile && handleTouchStart(product.id)}
-                                onTouchEnd={() => isMobile && handleTouchEnd()}
-                                onTouchCancel={() => isMobile && handleTouchEnd()}
+                                onTouchStart={(e) => isMobile && handleTouchStart(product.id, e)}
+                                onTouchEnd={() => isMobile && handleTouchEnd(product.id)}
+                                onTouchCancel={() => isMobile && handleTouchEnd(product.id)}
+                                onContextMenu={(e) => e.preventDefault()}
                             >
                                 {/* Shimmer skeleton while loading */}
                                 {!isLoaded && (
