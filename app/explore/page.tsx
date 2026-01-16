@@ -35,6 +35,12 @@ function ExplorePageContent() {
     const [isDragging, setIsDragging] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
+    // Pagination state for infinite scroll
+    const [currentPage, setCurrentPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [totalProducts, setTotalProducts] = useState(0);
+
     // Detect if device is mobile for optimized loading
     useEffect(() => {
         const checkMobile = () => {
@@ -47,8 +53,8 @@ function ExplorePageContent() {
     }, []);
 
     // Device-specific image loading threshold
-    // Mobile: Load 10 images initially, Desktop/Tablet: 20 images
-    const eagerLoadCount = isMobile ? 10 : 20;
+    // Mobile: Load 6 images initially, Desktop/Tablet: 8 images
+    const eagerLoadCount = isMobile ? 6 : 8;
 
     // Sync modal AND menu with URL
     useEffect(() => {
@@ -118,6 +124,36 @@ function ExplorePageContent() {
         loadAllProducts();
     }, []);
 
+    // Intersection Observer for infinite scroll
+    useEffect(() => {
+        if (isLoading || searchQuery.trim()) return; // Don't set up observer during initial load or search
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                // When the sentinel div becomes visible, load more
+                if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+                    loadMoreProducts();
+                }
+            },
+            {
+                threshold: 0.1, // Trigger when 10% of sentinel is visible
+                rootMargin: '200px' // Start loading 200px before sentinel comes into view
+            }
+        );
+
+        const sentinel = document.querySelector('#infinite-scroll-sentinel');
+        if (sentinel) {
+            observer.observe(sentinel);
+        }
+
+        return () => {
+            if (sentinel) {
+                observer.unobserve(sentinel);
+            }
+            observer.disconnect();
+        };
+    }, [hasMore, isLoadingMore, isLoading, searchQuery]);
+
     // Search debounce
     useEffect(() => {
         if (!searchQuery.trim()) {
@@ -139,16 +175,41 @@ function ExplorePageContent() {
     const loadAllProducts = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/products');
+            const response = await fetch('/api/products?page=1&limit=40');
             if (response.ok) {
                 const data = await response.json();
                 setAllProducts(data.products || []);
                 setDisplayedProducts(data.products || []);
+                setHasMore(data.hasMore || false);
+                setTotalProducts(data.total || 0);
+                setCurrentPage(1);
             }
         } catch (error) {
             console.error('Failed to load products:', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // Load more products for infinite scroll
+    const loadMoreProducts = async () => {
+        if (!hasMore || isLoadingMore || searchQuery.trim()) return; // Don't paginate during search
+
+        setIsLoadingMore(true);
+        try {
+            const nextPage = currentPage + 1;
+            const response = await fetch(`/api/products?page=${nextPage}&limit=40`);
+            if (response.ok) {
+                const data = await response.json();
+                setAllProducts(prev => [...prev, ...(data.products || [])]);
+                setDisplayedProducts(prev => [...prev, ...(data.products || [])]);
+                setHasMore(data.hasMore || false);
+                setCurrentPage(nextPage);
+            }
+        } catch (error) {
+            console.error('Failed to load more products:', error);
+        } finally {
+            setIsLoadingMore(false);
         }
     };
 
@@ -473,6 +534,23 @@ function ExplorePageContent() {
                 ) : (
                     <div className="text-center py-20">
                         <p className="text-gray-500 text-lg">No cakes found. Try a different search!</p>
+                    </div>
+                )}
+
+                {/* Infinite Scroll Sentinel */}
+                {!searchQuery.trim() && (
+                    <div id="infinite-scroll-sentinel" className="w-full py-8 flex justify-center">
+                        {isLoadingMore && (
+                            <div className="flex items-center gap-2 text-[#E46296]">
+                                <div className="w-6 h-6 border-3 border-[#E46296] border-t-transparent rounded-full animate-spin"></div>
+                                <span className="font-semibold">Loading more cakes...</span>
+                            </div>
+                        )}
+                        {!hasMore && allProducts.length > 0 && (
+                            <div className="text-gray-500 font-medium">
+                                You've seen all {totalProducts} cakes! 🎂
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
