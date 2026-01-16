@@ -41,6 +41,7 @@ function ExplorePageContent() {
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [totalProducts, setTotalProducts] = useState(0);
+    const [slideDirection, setSlideDirection] = useState<'next' | 'prev' | null>(null);
 
     // Detect if device is mobile for optimized loading
     useEffect(() => {
@@ -270,19 +271,57 @@ function ExplorePageContent() {
     };
 
     // Navigate to next/previous product
-    const navigateProduct = (direction: 'next' | 'prev') => {
+    const navigateProduct = async (direction: 'next' | 'prev') => {
         if (!selectedProduct) return;
 
         const currentIndex = displayedProducts.findIndex(p => p.id === selectedProduct.id);
         let newIndex;
 
-        if (direction === 'next') {
-            newIndex = (currentIndex + 1) % displayedProducts.length;
-        } else {
-            newIndex = (currentIndex - 1 + displayedProducts.length) % displayedProducts.length;
+        // Load more products if we are near the end (last 3 items) and going forward
+        if (direction === 'next' && currentIndex >= displayedProducts.length - 3 && hasMore && !isLoadingMore && !searchQuery) {
+            await loadMoreProducts();
+            // Note: navigate will happen with updated displayedProducts in logic below 
+            // BUT since state update is async, we can't rely on it immediately in this render cycle using 'displayedProducts'.
+            // However, since regular loadMore is effective, we just let the USER hit next again for now, 
+            // OR simpler: we don't block navigation, we just fetch in background.
+            // The user will see the existing last product, then when they click next, new ones might be there.
         }
 
+        if (direction === 'next') {
+            // If we are at the very last item and trying to go next
+            if (currentIndex === displayedProducts.length - 1) {
+                // If there's more content, load it and STOP wrapping
+                if (hasMore && !searchQuery) {
+                    await loadMoreProducts();
+                    return; // Wait for user to click again or useEffect to handle update (complex), 
+                    // simpler: just return and let them click again once loaded. 
+                    // Actually, better UX: fetch beforehand (prefetching implemented above).
+
+                    // IF we want to wrap only if NO more content:
+                } else if (!hasMore) {
+                    newIndex = 0; // Wrap to start only if no more data
+                } else {
+                    return; // Should not happen if logic is correct
+                }
+            } else {
+                newIndex = currentIndex + 1;
+            }
+        } else {
+            // Previous logic
+            if (currentIndex === 0) {
+                // wrap to end
+                newIndex = displayedProducts.length - 1;
+            } else {
+                newIndex = currentIndex - 1;
+            }
+        }
+
+        // Safety check if we found a valid index
+        if (newIndex === undefined) return;
+
         const nextProduct = displayedProducts[newIndex];
+        if (!nextProduct) return; // Guard clause
+
         setSelectedProduct(nextProduct);
 
         // Update URL without adding to history stack
@@ -293,7 +332,30 @@ function ExplorePageContent() {
         setImageZoom(1); // Reset zoom when changing images
         setDragOffset(0); // Reset drag offset
         setIsDragging(false);
+        setSlideDirection(direction); // Trigger animation
     };
+
+    // Preload next/prev images when modal is open
+    useEffect(() => {
+        if (!selectedProduct) return;
+
+        const currentIndex = displayedProducts.findIndex(p => p.id === selectedProduct.id);
+        if (currentIndex === -1) return;
+
+        // Calculate next and prev indices
+        const nextIndex = (currentIndex + 1) % displayedProducts.length;
+        const prevIndex = (currentIndex - 1 + displayedProducts.length) % displayedProducts.length;
+
+        // Preload images
+        const preloadImage = (url: string) => {
+            const img = new window.Image();
+            img.src = getLargeImageUrl(url);
+        };
+
+        preloadImage(displayedProducts[nextIndex].image_url);
+        preloadImage(displayedProducts[prevIndex].image_url);
+
+    }, [selectedProduct, displayedProducts]);
 
     // Keyboard navigation
     useEffect(() => {
@@ -350,25 +412,34 @@ function ExplorePageContent() {
         if (!isDragging || !touchStart) return;
         setTouchEnd(clientX);
         const diff = clientX - touchStart;
-        setDragOffset(diff);
+        setDragOffset(diff); // Update offset in real-time
     };
 
     const handleSwipeEnd = () => {
         if (!touchStart || !touchEnd) return;
 
         const distance = touchStart - touchEnd;
-        const isLeftSwipe = distance > 10;  // Reduced from 30 to 10
-        const isRightSwipe = distance < -10; // Reduced from 30 to 10
+        const threshold = 70; // Drag threshold to trigger change
 
-        if (isLeftSwipe) {
-            navigateProduct('next');
-        } else if (isRightSwipe) {
-            navigateProduct('prev');
+        // If dragged far enough
+        if (Math.abs(distance) > threshold) {
+            // Slide OUT completely (visual feedback before change)
+            setDragOffset(distance > 0 ? -window.innerWidth : window.innerWidth);
+
+            // Navigate after small delay to let visual slide-out happen
+            // But for responsiveness, we usually navigate immediately and let the NEW image enter
+            if (distance > 0) {
+                navigateProduct('next');
+            } else {
+                navigateProduct('prev');
+            }
+        } else {
+            // Snap back
+            setDragOffset(0);
         }
 
         setTouchStart(0);
         setTouchEnd(0);
-        setDragOffset(0);
         setIsDragging(false);
     };
 
@@ -569,23 +640,35 @@ function ExplorePageContent() {
                         }}
                     >
                         <div
-                            className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-auto"
+                            className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-auto select-none"
                             onClick={(e) => e.stopPropagation()}
                             onTouchStart={(e) => handleSwipeStart(e.touches[0].clientX)}
                             onTouchMove={(e) => handleSwipeMove(e.touches[0].clientX)}
                             onTouchEnd={() => handleSwipeEnd()}
+                            onMouseDown={(e) => handleSwipeStart(e.clientX)}
+                            onMouseMove={(e) => handleSwipeMove(e.clientX)}
+                            onMouseUp={() => handleSwipeEnd()}
+                            onMouseLeave={() => isDragging && handleSwipeEnd()}
                         >
                             {/* Image Section */}
-                            <div className="relative aspect-square bg-gray-100">
-                                <Image
-                                    src={getLargeImageUrl(selectedProduct.image_url)}
-                                    alt={selectedProduct.name}
-                                    fill
-                                    className="object-contain transition-transform duration-200"
-                                    style={{ transform: `scale(${imageZoom})` }}
-                                    sizes="100vw"
-                                    priority
-                                />
+                            <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                                <div
+                                    key={selectedProduct.id} // Re-mount wrapper to trigger slide animation
+                                    className={`w-full h-full flex items-center justify-center ${slideDirection === 'next' ? 'animate-slide-left' :
+                                        slideDirection === 'prev' ? 'animate-slide-right' : ''
+                                        }`}
+                                    onAnimationEnd={() => setSlideDirection(null)}
+                                >
+                                    <Image
+                                        src={getLargeImageUrl(selectedProduct.image_url)}
+                                        alt={selectedProduct.name}
+                                        fill
+                                        className="object-contain transition-transform duration-200"
+                                        style={{ transform: `scale(${imageZoom})` }}
+                                        sizes="100vw"
+                                        priority
+                                    />
+                                </div>
 
                                 {/* Close Button */}
                                 <button
