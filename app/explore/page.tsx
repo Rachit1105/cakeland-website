@@ -409,9 +409,19 @@ function ExplorePageContent() {
     };
 
     const handleSwipeMove = (clientX: number) => {
-        if (!isDragging || !touchStart) return;
-        setTouchEnd(clientX);
+        if (!isDragging || !touchStart || !selectedProduct) return;
+
+        const currentIndex = displayedProducts.findIndex(p => p.id === selectedProduct.id);
         const diff = clientX - touchStart;
+
+        // Disable swiping right (going prev) if at the first item
+        if (currentIndex === 0 && diff > 0) {
+            setTouchEnd(clientX);
+            setDragOffset(0); // Force offset to 0 (resistance)
+            return;
+        }
+
+        setTouchEnd(clientX);
         setDragOffset(diff); // Update offset in real-time
     };
 
@@ -419,10 +429,18 @@ function ExplorePageContent() {
         if (!touchStart || !touchEnd) return;
 
         const distance = touchStart - touchEnd;
-        const threshold = 70; // Drag threshold to trigger change
+        const threshold = 30; // Reduced to 50px per user request
 
         // If dragged far enough
         if (Math.abs(distance) > threshold) {
+
+            // Disable prev swipe (distance < 0) on first item
+            if (distance < 0 && getCurrentIndex() === 0) {
+                setDragOffset(0);
+                setIsDragging(false);
+                return;
+            }
+
             // Slide OUT completely (visual feedback before change)
             setDragOffset(distance > 0 ? -window.innerWidth : window.innerWidth);
 
@@ -683,14 +701,16 @@ function ExplorePageContent() {
                                 </button>
 
                                 {/* Navigation Arrows */}
-                                <button
-                                    onClick={() => navigateProduct('prev')}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition"
-                                >
-                                    <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                </button>
+                                {getCurrentIndex() > 0 && (
+                                    <button
+                                        onClick={() => navigateProduct('prev')}
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition"
+                                    >
+                                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => navigateProduct('next')}
                                     className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition"
