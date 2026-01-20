@@ -15,80 +15,106 @@ export async function POST(request: Request) {
 
         // 1. Generate embedding for the search query using Hugging Face CLIP API
         console.log('Calling CLIP API for query:', query);
-        const clipResponse = await fetch(`${CLIP_API_URL}/embed-text`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: query })
-        });
 
-        if (!clipResponse.ok) {
-            throw new Error(`CLIP API error: ${clipResponse.statusText}`);
-        }
+        // Add timeout for HF Space (may be sleeping after inactivity)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
-        const { embedding } = await clipResponse.json();
-        const queryEmbedding: number[] = embedding;
-
-        // 2. Search for similar products using pgvector
-        console.log('Searching for query:', query);
-        // Using RPC function for vector similarity search
-        const { data: products, error } = await supabase.rpc('match_products', {
-            query_embedding: queryEmbedding,
-            match_threshold: 0.0,  // DEBUG: Set to 0.0 to see EVERYTHING
-            match_count: 20
-        });
-
-        if (products) {
-            console.log(`\n========== SEARCH RESULTS for "${query}" ==========`);
-            console.log(`Found ${products.length} total matches`);
-            console.log('\nRanked by similarity (highest first):');
-            products.forEach((p: any, idx: number) => {
-                console.log(`  ${idx + 1}. [${(p.similarity * 100).toFixed(1)}%] ${p.name} (ID: ${p.id})`);
+        try {
+            const clipResponse = await fetch(`${CLIP_API_URL}/embed-text`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: query }),
+                signal: controller.signal
             });
-            console.log('===============================================\n');
-        }
 
-        if (error) {
-            console.error('Database search error:', error);
-            // Fallback: try direct query if RPC doesn't exist
-            const { data: allProducts, error: fallbackError } = await supabase
-                .from('products')
-                .select('id, name, image_url, thumbnail_url, embedding')
-                .not('embedding', 'is', null);
+            clearTimeout(timeoutId);
 
-            if (fallbackError) {
-                throw new Error(`Database error: ${fallbackError.message}`);
+            if (!clipResponse.ok) {
+                throw new Error(`CLIP API error: ${clipResponse.statusText}`);
             }
 
-            // Calculate cosine similarity in JavaScript
-            const results = allProducts
-                .map((product: any) => {
-                    const productEmbedding = product.embedding as number[];
-                    const similarity = cosineSimilarity(queryEmbedding, productEmbedding);
-                    return {
-                        ...product,
-                        similarity
-                    };
-                })
-                .filter((p: any) => p.similarity > 0.15)  // Lowered from 0.3
-                .sort((a: any, b: any) => b.similarity - a.similarity)
-                .slice(0, 20);
+            const { embedding } = await clipResponse.json();
+            const queryEmbedding: number[] = embedding;
 
-            return NextResponse.json({ products: results });
-        }
+            // 2. Search for similar products using pgvector
+            console.log('Searching for query:', query);
+            // Using RPC function for vector similarity search
+            const { data: products, error } = await supabase.rpc('match_products', {
+                query_embedding: queryEmbedding,
+                match_threshold: 0.0,  // DEBUG: Set to 0.0 to see EVERYTHING
+                match_count: 20
+            });
 
-        return NextResponse.json({
-            products,
-            debug: {
-                query,
-                totalResults: products.length,
-                topScore: products[0]?.similarity,
-                bottomScore: products[products.length - 1]?.similarity,
-                scoresPreview: products.slice(0, 5).map((p: any) => ({
-                    name: p.name,
-                    similarity: p.similarity
-                }))
+            if (products) {
+                console.log(`\n========== SEARCH RESULTS for "${query}" ==========`);
+                console.log(`Found ${products.length} total matches`);
+                console.log('\nRanked by similarity (highest first):');
+                products.forEach((p: any, idx: number) => {
+                    console.log(`  ${idx + 1}. [${(p.similarity * 100).toFixed(1)}%] ${p.name} (ID: ${p.id})`);
+                });
+                console.log('===============================================\n');
             }
-        });
+
+            if (error) {
+                console.error('Database search error:', error);
+                // Fallback: try direct query if RPC doesn't exist
+                const { data: allProducts, error: fallbackError } = await supabase
+                    .from('products')
+                    .select('id, name, image_url, thumbnail_url, embedding')
+                    .not('embedding', 'is', null);
+
+                if (fallbackError) {
+                    throw new Error(`Database error: ${fallbackError.message}`);
+                }
+
+                // Calculate cosine similarity in JavaScript
+                const results = allProducts
+                    .map((product: any) => {
+                        const productEmbedding = product.embedding as number[];
+                        const similarity = cosineSimilarity(queryEmbedding, productEmbedding);
+                        return {
+                            ...product,
+                            similarity
+                        };
+                    })
+                    .filter((p: any) => p.similarity > 0.15)  // Lowered from 0.3
+                    .sort((a: any, b: any) => b.similarity - a.similarity)
+                    .slice(0, 20);
+
+                return NextResponse.json({ products: results });
+            }
+
+            return NextResponse.json({
+                products,
+                debug: {
+                    query,
+                    totalResults: products.length,
+                    topScore: products[0]?.similarity,
+                    bottomScore: products[products.length - 1]?.similarity,
+                    scoresPreview: products.slice(0, 5).map((p: any) => ({
+                        name: p.name,
+                        similarity: p.similarity
+                    }))
+                }
+            });
+
+        } catch (fetchError: any) {
+            clearTimeout(timeoutId);
+
+            // Handle timeout specifically
+            if (fetchError.name === 'AbortError') {
+                console.error('CLIP API timeout - Space may be waking up from sleep');
+                return NextResponse.json({
+                    error: 'AI service is starting up',
+                    message: 'The AI search service was sleeping and is now waking up. Please try again in 30 seconds.',
+                    isTimeout: true
+                }, { status: 503 });
+            }
+
+            // Other fetch errors
+            throw fetchError;
+        }
 
 
     } catch (error: any) {

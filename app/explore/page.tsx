@@ -229,9 +229,19 @@ function ExplorePageContent() {
             if (response.ok) {
                 const data = await response.json();
                 setDisplayedProducts(data.products || []);
+            } else if (response.status === 503) {
+                // AI service is waking up
+                const errorData = await response.json();
+                console.warn('AI service timeout:', errorData.message);
+                alert('🤖 AI Search is waking up!\n\nThe search service was sleeping and needs 30-60 seconds to start. Please try your search again in a moment.');
+                setDisplayedProducts(allProducts); // Show all products as fallback
+            } else {
+                console.error('Search failed with status:', response.status);
+                alert('Search failed. Please try again.');
             }
         } catch (error) {
             console.error('Search failed:', error);
+            alert('Search failed. Please check your connection and try again.');
         } finally {
             setIsSearching(false);
         }
