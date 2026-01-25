@@ -92,3 +92,32 @@ body {
     transform: translateX(0) scale(1);
   }
 }
+
+/* Instagram-style carousel animations */
+.animate-slide-in-from-right {
+  animation: slideInFromRight 0.25s ease-out forwards;
+}
+
+.animate-slide-in-from-left {
+  animation: slideInFromLeft 0.25s ease-out forwards;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}

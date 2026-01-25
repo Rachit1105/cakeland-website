@@ -77,6 +77,19 @@ function ExplorePageContent() {
 
     }, [searchParams, allProducts]);
 
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (selectedProduct) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        // Cleanup on unmount
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [selectedProduct]);
+
     // Handle menu toggle
     const toggleMenu = () => {
         if (menuOpen) {
@@ -424,46 +437,50 @@ function ExplorePageContent() {
         const currentIndex = displayedProducts.findIndex(p => p.id === selectedProduct.id);
         const diff = clientX - touchStart;
 
-        // Disable swiping right (going prev) if at the first item
+        // Add resistance at boundaries
         if (currentIndex === 0 && diff > 0) {
-            setTouchEnd(clientX);
-            setDragOffset(0); // Force offset to 0 (resistance)
-            return;
+            // First item, swiping right - add resistance (divide by 3)
+            setDragOffset(diff / 3);
+        } else if (currentIndex === displayedProducts.length - 1 && diff < 0 && !hasMore) {
+            // Last item, swiping left with no more content - add resistance
+            setDragOffset(diff / 3);
+        } else {
+            // Normal swiping - 1:1 tracking
+            setDragOffset(diff);
         }
 
         setTouchEnd(clientX);
-        setDragOffset(diff); // Update offset in real-time
     };
 
     const handleSwipeEnd = () => {
-        if (!touchStart || !touchEnd) return;
+        if (!touchStart || !touchEnd) {
+            setIsDragging(false);
+            return;
+        }
 
         const distance = touchStart - touchEnd;
-        const threshold = 30; // Reduced to 50px per user request
+        const threshold = 50; // Threshold for triggering navigation
+        const currentIndex = getCurrentIndex();
 
-        // If dragged far enough
+        // Reset drag offset immediately
+        setDragOffset(0);
+
+        // If dragged far enough to trigger navigation
         if (Math.abs(distance) > threshold) {
-
-            // Disable prev swipe (distance < 0) on first item
-            if (distance < 0 && getCurrentIndex() === 0) {
-                setDragOffset(0);
-                setIsDragging(false);
-                return;
-            }
-
-            // Slide OUT completely (visual feedback before change)
-            setDragOffset(distance > 0 ? -window.innerWidth : window.innerWidth);
-
-            // Navigate after small delay to let visual slide-out happen
-            // But for responsiveness, we usually navigate immediately and let the NEW image enter
+            // Swiping left (going next)
             if (distance > 0) {
-                navigateProduct('next');
-            } else {
-                navigateProduct('prev');
+                if (currentIndex < displayedProducts.length - 1 || hasMore) {
+                    setSlideDirection('next'); // Animate from right
+                    navigateProduct('next');
+                }
             }
-        } else {
-            // Snap back
-            setDragOffset(0);
+            // Swiping right (going prev)
+            else {
+                if (currentIndex > 0) {
+                    setSlideDirection('prev'); // Animate from left
+                    navigateProduct('prev');
+                }
+            }
         }
 
         setTouchStart(0);
@@ -678,22 +695,27 @@ function ExplorePageContent() {
                             onMouseUp={() => handleSwipeEnd()}
                             onMouseLeave={() => isDragging && handleSwipeEnd()}
                         >
-                            {/* Image Section */}
+                            {/* Image Section with Swipe Support */}
                             <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                                {/* Single Image with Drag + Slide Animation */}
                                 <div
-                                    key={selectedProduct.id} // Re-mount wrapper to trigger slide animation
-                                    className={`w-full h-full flex items-center justify-center ${slideDirection === 'next' ? 'animate-slide-left' :
-                                        slideDirection === 'prev' ? 'animate-slide-right' : ''
+                                    key={selectedProduct.id}
+                                    className={`w-full h-full ${slideDirection === 'next' ? 'animate-slide-in-from-right' :
+                                        slideDirection === 'prev' ? 'animate-slide-in-from-left' : ''
                                         }`}
+                                    style={{
+                                        transform: isDragging ? `translateX(${dragOffset}px)` : 'translateX(0)',
+                                        transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                                    }}
                                     onAnimationEnd={() => setSlideDirection(null)}
                                 >
                                     <Image
                                         src={getLargeImageUrl(selectedProduct.image_url)}
                                         alt={selectedProduct.name}
                                         fill
-                                        className="object-contain transition-transform duration-200"
+                                        className="object-contain"
                                         style={{ transform: `scale(${imageZoom})` }}
-                                        sizes="100vw"
+                                        sizes="(max-width: 768px) 100vw, 50vw"
                                         priority
                                     />
                                 </div>
