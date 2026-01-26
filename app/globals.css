@@ -121,3 +121,122 @@ body {
     transform: translateX(0);
   }
 }
+
+/* Bokeh floating animation */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: translateY(-20px) scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 8s ease-in-out infinite 2s;
+}
+
+.animate-float-slow {
+  animation: float 10s ease-in-out infinite 1s;
+}
+
+/* Premium shimmer effect for buttons */
+@keyframes shimmerBtn {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.btn-shimmer {
+  background: linear-gradient(90deg,
+      #ec4899 0%,
+      #f472b6 25%,
+      #fbcfe8 50%,
+      #f472b6 75%,
+      #ec4899 100%);
+  background-size: 200% auto;
+  animation: shimmerBtn 3s linear infinite;
+}
+
+/* 3D Carousel card styles */
+.carousel-card {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.carousel-card-center {
+  transform: scale(1) translateX(0);
+  opacity: 1;
+  z-index: 30;
+  filter: brightness(1);
+}
+
+.carousel-card-left {
+  transform: scale(0.8) translateX(-70%);
+  opacity: 0.85;
+  z-index: 20;
+  filter: brightness(0.98);
+}
+
+.carousel-card-right {
+  transform: scale(0.8) translateX(70%);
+  opacity: 0.85;
+  z-index: 20;
+  filter: brightness(0.98);
+}
+
+.carousel-card-far-left {
+  transform: scale(0.6) translateX(-120%);
+  opacity: 0.65;
+  z-index: 10;
+  filter: brightness(0.95);
+}
+
+.carousel-card-far-right {
+  transform: scale(0.6) translateX(120%);
+  opacity: 0.65;
+  z-index: 10;
+  filter: brightness(0.95);
+}
+
+.carousel-card-hidden {
+  transform: scale(0.5);
+  opacity: 0;
+  z-index: 5;
+}
+
+/* Glassmorphism card effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Pulse glow animation */
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(236, 72, 153, 0.5);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}

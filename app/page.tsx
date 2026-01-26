@@ -1,27 +1,33 @@
 'use client';
 import { Suspense } from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { FaWhatsapp, FaInstagram, FaSearch, FaHome, FaBook, FaBars, FaTimes, FaPhone } from 'react-icons/fa';
+import { FaWhatsapp, FaInstagram, FaSearch, FaBook, FaBars, FaTimes, FaPhone, FaInfoCircle } from 'react-icons/fa';
+
+interface Product {
+  id: number;
+  name: string;
+  image_url: string;
+  thumbnail_url?: string | null;
+}
 
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [introComplete] = useState(true); // Skip intro, go straight to carousel
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [carouselProducts, setCarouselProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
 
-  // Sync Mobile Menu with URL
   useEffect(() => {
     const isMenuOpen = searchParams.get('menu') === 'true';
     setMenuOpen(isMenuOpen);
   }, [searchParams]);
 
-  // Handle menu toggle
   const toggleMenu = () => {
     if (menuOpen) {
       router.back();
@@ -32,53 +38,43 @@ function HomeContent() {
     }
   };
 
-  // Handle closing menu
   const closeMenu = () => {
     if (menuOpen) router.back();
   };
 
-  const slides = [
-    {
-      type: "welcome",
-      title: "Cakeland",
-      tagline: "Crafting Sweet Memories Since 2020",
-      features: [
-        { icon: "✨", text: "Custom Designs" },
-        { icon: "🎂", text: "Fresh Daily" },
-        { icon: "💝", text: "Made with Love" }
-      ],
-      cta: "About Us",
-      link: "/about",
-      icon: "🔍"
-    },
-    {
-      type: "standard",
-      title: "Explore Our Creations",
-      description: "Discover our AI-powered cake gallery with smart search",
-      cta: "Start Exploring",
-      link: "/explore",
-      icon: "🔍"
-    },
-    {
-      type: "standard",
-      title: "Dive Into Our Menu",
-      description: "Browse our complete collection of signature cakes",
-      cta: "View Menu",
-      link: "/menu",
-      icon: "🎂"
+  const fetchRandomProducts = useCallback(async () => {
+    try {
+      // Fetch more products for better randomization
+      const res = await fetch('/api/products?limit=100');
+      const data = await res.json();
+      if (data.products && data.products.length > 0) {
+        // Fisher-Yates shuffle for true randomness
+        const products = [...data.products];
+        for (let i = products.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [products[i], products[j]] = [products[j], products[i]];
+        }
+        setCarouselProducts(products.slice(0, 5));
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  }, []);
 
-  // Auto-rotate carousel (resets when user swipes manually)
   useEffect(() => {
+    fetchRandomProducts();
+  }, [fetchRandomProducts]);
+
+  useEffect(() => {
+    if (carouselProducts.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000); // Change slide every 5 seconds
-
+      setCurrentSlide((prev) => (prev + 1) % carouselProducts.length);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [slides.length, currentSlide]); // Resets timer whenever currentSlide changes
+  }, [carouselProducts.length]);
 
-  // Swipe handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
   };
@@ -89,85 +85,65 @@ function HomeContent() {
 
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-
     const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe) {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    if (distance > 50) {
+      setCurrentSlide((prev) => (prev + 1) % carouselProducts.length);
     }
-    if (isRightSwipe) {
-      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    if (distance < -50) {
+      setCurrentSlide((prev) => (prev - 1 + carouselProducts.length) % carouselProducts.length);
     }
-
     setTouchStart(0);
     setTouchEnd(0);
   };
 
-  // Mouse drag handlers (for desktop)
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setTouchStart(e.clientX);
+  const getCardPosition = (index: number) => {
+    const len = carouselProducts.length;
+    if (len === 0) return 'carousel-card-hidden';
+
+    let diff = index - currentSlide;
+
+    // Normalize for circular array
+    if (diff > len / 2) diff -= len;
+    if (diff < -len / 2) diff += len;
+
+    if (diff === 0) return 'carousel-card-center';
+    if (diff === -1) return 'carousel-card-left';
+    if (diff === 1) return 'carousel-card-right';
+    if (diff === -2) return 'carousel-card-far-left';
+    if (diff === 2) return 'carousel-card-far-right';
+    return 'carousel-card-hidden';
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (touchStart === 0) return;
-    setTouchEnd(e.clientX);
-  };
-
-  const handleMouseUp = () => {
-    if (!touchStart || !touchEnd) return;
-
-    const distance = touchStart - touchEnd;
-    const isLeftDrag = distance > 50;
-    const isRightDrag = distance < -50;
-
-    if (isLeftDrag) {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }
-    if (isRightDrag) {
-      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-    }
-
-    setTouchStart(0);
-    setTouchEnd(0);
-  };
+  const features = [
+    { icon: '✨', title: 'Custom Designs', subtitle: 'Any theme you imagine' },
+    { icon: '🎂', title: 'Fresh Daily', subtitle: 'Baked every morning' },
+    { icon: '💝', title: 'Made with Love', subtitle: '500+ happy customers' },
+  ];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-pink-200 via-pink-100 to-white flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-1000">
+    <main className="min-h-screen bg-gradient-to-b from-pink-100 via-pink-50 to-white relative overflow-hidden">
 
-      {/* --- SIDE DECORATIONS (only during intro) --- */}
-      <div
-        className={`absolute top-0 bottom-0 left-4 md:left-10 flex items-center h-full z-0 transition-opacity duration-1000 ${introComplete ? 'opacity-0 pointer-events-none' : 'opacity-100'
-          }`}
-      >
-        <div className="flex h-full relative">
-          <div className="w-6 md:w-12 bg-white h-full shadow-lg"></div>
-          <div className="w-2 md:w-4 bg-pink-200 h-full"></div>
-          <div className="w-1 md:w-2 bg-white h-full opacity-80"></div>
-          <div className="absolute top-1/2 -left-2 md:-left-4 transform -translate-y-1/2 w-12 h-12 md:w-20 md:h-20 bg-white rotate-45 flex items-center justify-center shadow-md">
-            <div className="w-10 h-10 md:w-16 md:h-16 bg-pink-200 rotate-90 opacity-40"></div>
-          </div>
-        </div>
+      {/* Bokeh Background Effects */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Large soft circles */}
+        <div className="absolute top-10 left-5 w-40 h-40 bg-pink-300/50 rounded-full blur-3xl animate-float" />
+        <div className="absolute top-32 right-10 w-56 h-56 bg-pink-200/40 rounded-full blur-3xl animate-float-delayed" />
+        <div className="absolute bottom-40 left-1/4 w-52 h-52 bg-pink-300/45 rounded-full blur-3xl animate-float-slow" />
+        <div className="absolute bottom-10 right-5 w-36 h-36 bg-pink-200/50 rounded-full blur-2xl animate-float" />
+        <div className="absolute top-1/2 left-10 w-28 h-28 bg-white/60 rounded-full blur-2xl animate-float-delayed" />
+        <div className="absolute top-1/4 right-1/3 w-32 h-32 bg-pink-100/70 rounded-full blur-2xl animate-float-slow" />
+        {/* Sparkle particles */}
+        <div className="absolute top-20 left-1/3 w-3 h-3 bg-white rounded-full animate-pulse opacity-80" />
+        <div className="absolute top-40 right-1/4 w-2 h-2 bg-pink-200 rounded-full animate-pulse opacity-90" style={{ animationDelay: '0.5s' }} />
+        <div className="absolute bottom-32 left-1/2 w-2 h-2 bg-white rounded-full animate-pulse opacity-70" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/3 left-20 w-3 h-3 bg-pink-100 rounded-full animate-pulse opacity-80" style={{ animationDelay: '1.5s' }} />
+        <div className="absolute bottom-60 right-20 w-2 h-2 bg-white rounded-full animate-pulse opacity-90" style={{ animationDelay: '0.3s' }} />
+        <div className="absolute top-60 right-10 w-3 h-3 bg-pink-200 rounded-full animate-pulse opacity-75" style={{ animationDelay: '0.8s' }} />
+        {/* Extra glow layers */}
+        <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-pink-200/30 to-transparent" />
       </div>
 
-      <div
-        className={`absolute top-0 bottom-0 right-4 md:right-10 flex items-center h-full z-0 flex-row-reverse transition-opacity duration-1000 ${introComplete ? 'opacity-0 pointer-events-none' : 'opacity-100'
-          }`}
-      >
-        <div className="flex h-full flex-row-reverse relative">
-          <div className="w-6 md:w-12 bg-white h-full shadow-lg"></div>
-          <div className="w-2 md:w-4 bg-pink-200 h-full"></div>
-          <div className="w-1 md:w-2 bg-white h-full opacity-80"></div>
-          <div className="absolute top-1/2 -right-2 md:-right-4 transform -translate-y-1/2 w-12 h-12 md:w-20 md:h-20 bg-white rotate-45 flex items-center justify-center shadow-md">
-            <div className="w-10 h-10 md:w-16 md:h-16 bg-pink-200 rotate-90 opacity-40"></div>
-          </div>
-        </div>
-      </div>
-
-
-
-      {/* --- PINK HEADER WITH RECTANGULAR LOGO --- */}
+      {/* Header */}
       <div className="fixed top-0 left-0 right-0 bg-[#E46296] h-20 md:h-24 z-40 shadow-lg flex items-center justify-between px-2 md:px-10">
         <div className="w-44 h-16 md:w-56 md:h-20 relative -ml-2 md:ml-0">
           <Image
@@ -179,18 +155,17 @@ function HomeContent() {
           />
         </div>
 
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-5 text-white">
           <Link href="/explore" className="font-semibold uppercase text-sm tracking-wide hover:underline transition flex items-center gap-2">
             <FaSearch size={16} />
             Explore
           </Link>
-          <div className="h-6 w-px bg-white/50"></div>
+          <div className="h-6 w-px bg-white/50" />
           <Link href="/menu" className="font-semibold uppercase text-sm tracking-wide hover:underline transition flex items-center gap-2">
             <FaBook size={18} />
             Menu
           </Link>
-          <div className="h-6 w-px bg-white/50"></div>
+          <div className="h-6 w-px bg-white/50" />
           <a href="https://wa.me/919883414650" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition duration-200">
             <FaWhatsapp size={24} />
           </a>
@@ -199,13 +174,12 @@ function HomeContent() {
           </a>
         </nav>
 
-        {/* Mobile Navigation */}
         <div className="flex md:hidden items-center gap-3 text-white">
           <Link href="/explore" className="font-semibold text-base tracking-wide hover:underline transition flex items-center gap-2">
             <FaSearch size={18} />
             Explore
           </Link>
-          <div className="h-6 w-px bg-white/50"></div>
+          <div className="h-6 w-px bg-white/50" />
           <button onClick={toggleMenu} className="p-2 hover:bg-white/10 rounded transition">
             {menuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
           </button>
@@ -227,7 +201,7 @@ function HomeContent() {
             <FaBook size={20} />
             <span className="font-semibold">Menu</span>
           </Link>
-          <div className="h-px bg-white/30"></div>
+          <div className="h-px bg-white/30" />
           <a href="https://wa.me/919883414650" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
             <FaWhatsapp size={20} />
             <span className="font-semibold">WhatsApp</span>
@@ -236,7 +210,7 @@ function HomeContent() {
             <FaInstagram size={20} />
             <span className="font-semibold">Instagram</span>
           </a>
-          <div className="h-px bg-white/30"></div>
+          <div className="h-px bg-white/30" />
           <a href="tel:+919883414650" className="flex items-center gap-3 hover:bg-white/10 p-3 rounded transition">
             <FaPhone size={20} />
             <span className="font-semibold">Call Us</span>
@@ -244,130 +218,130 @@ function HomeContent() {
         </nav>
       </div>
 
+      {/* Main Content */}
+      <div className="relative z-10 pt-24 md:pt-28 px-4 pb-12">
 
-      {introComplete && (
-        <div className="relative z-10 flex flex-col items-center justify-center flex-1 w-full max-w-5xl px-4 py-8 pt-24 md:pt-28">
-
-          {/* Pink Circle Accent */}
-          <div className="absolute top-32 right-10 w-40 h-40 bg-pink-200/40 rounded-full -z-10"></div>
-          <div className="absolute bottom-40 left-10 w-60 h-60 bg-pink-200/30 rounded-full -z-10"></div>
-
-          <div className="text-center mt-8 md:mt-4 relative w-full">
-
-            {/* Carousel Container */}
-            <div
-              className="relative overflow-visible min-h-[550px] md:min-h-[600px] flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-            >
-              {slides.map((slide, index) => {
-                // Calculate position relative to current slide for infinite loop
-                let position = index - currentSlide;
-
-                // Handle infinite loop: if slide is far behind, place it ahead
-                if (position < -1) {
-                  position = slides.length + position;
-                }
-                // If slide is far ahead, place it behind  
-                if (position > 1) {
-                  position = position - slides.length;
-                }
+        {/* 3D Carousel Section */}
+        <div
+          className="relative h-[380px] md:h-[480px] flex items-center justify-center overflow-visible mb-6"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {loading ? (
+            <div className="flex items-center justify-center">
+              <div className="w-16 h-16 border-4 border-pink-300 border-t-pink-500 rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="relative w-full max-w-4xl h-full flex items-center justify-center">
+              {carouselProducts.map((product, index) => {
+                const position = getCardPosition(index);
+                const isVisible = position !== 'carousel-card-hidden';
 
                 return (
                   <div
-                    key={index}
-                    className={`absolute w-full transition-all duration-700 ease-in-out ${position === 0
-                      ? 'opacity-100 translate-x-0'
-                      : position < 0
-                        ? 'opacity-0 -translate-x-full'
-                        : 'opacity-0 translate-x-full'
-                      }`}
+                    key={product.id}
+                    className={`carousel-card absolute w-56 h-64 md:w-72 md:h-80 rounded-3xl overflow-hidden shadow-2xl border-4 border-white/80 ${position}`}
+                    style={{ display: isVisible ? 'block' : 'none' }}
                   >
-                    {slide.type === 'welcome' ? (
-                      // Welcome Slide with Large Logo
-                      <>
-                        <div className="w-72 h-72 md:w-96 md:h-96 relative mx-auto mb-10 rounded-3xl overflow-hidden border-4 border-pink-200 shadow-2xl">
-                          <Image
-                            src="/10.png"
-                            alt="Cakeland Logo"
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-
-                        <p className="text-xl md:text-2xl text-gray-600 mb-8 font-light">
-                          {slide.tagline}
-                        </p>
-
-                        <div className="flex flex-wrap justify-center gap-4 mb-10">
-                          {slide.features?.map((feature, i) => (
-                            <div key={i} className="flex items-center gap-2 px-5 py-2 bg-pink-50 text-[#E46296] rounded-full text-sm font-semibold border-2 border-pink-100">
-                              <span className="text-base">{feature.icon}</span>
-                              <span>{feature.text}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <Link
-                          href={slide.link}
-                          className="inline-flex items-center gap-3 px-10 py-5 bg-[#E46296] text-white font-bold text-lg rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
-                        >
-                          <FaHome size={22} />
-                          {slide.cta}
-                        </Link>
-                      </>
-                    ) : (
-                      // Standard Slides
-                      <>
-                        <div className="text-7xl md:text-8xl mb-8 animate-bounce">{slide.icon}</div>
-
-                        <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-[#E46296] mb-6 px-4">
-                          {slide.title}
-                        </h1>
-
-                        <div className="w-24 h-1 bg-[#E46296] mx-auto mb-6"></div>
-
-                        <p className="text-lg md:text-xl lg:text-2xl text-gray-600 mb-10 font-light max-w-2xl mx-auto px-4">
-                          {slide.description}
-                        </p>
-
-                        <Link
-                          href={slide.link}
-                          className="inline-flex items-center gap-3 px-10 py-5 bg-[#E46296] text-white font-bold text-lg rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
-                        >
-                          {slide.link === '/menu' ? <FaBook size={22} /> : <FaSearch size={22} />}
-                          {slide.cta}
-                        </Link>
-                      </>
-                    )}
+                    <Image
+                      src={product.thumbnail_url || product.image_url}
+                      alt={product.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 224px, 288px"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   </div>
                 );
               })}
             </div>
-
-            {/* Carousel Dots Navigation */}
-            <div className="flex justify-center gap-3 mt-16">
-              {slides.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`transition-all duration-300 rounded-full ${index === currentSlide
-                    ? 'w-8 h-3 bg-[#E46296]'
-                    : 'w-3 h-3 bg-pink-200 hover:bg-pink-300'
-                    }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-          </div>
+          )}
         </div>
-      )}
 
+        {/* Logo & Tagline */}
+        <div className="text-center mb-8">
+          <div className="relative mx-auto mb-4 w-72 h-28 md:w-96 md:h-32">
+            {/* Soft diffused white glow for visibility */}
+            <div className="absolute inset-0 bg-white/50 rounded-full blur-3xl scale-150" />
+            <Image
+              src="/Cakeland.png"
+              alt="Cakeland Logo"
+              fill
+              className="object-contain relative z-10 drop-shadow-lg"
+              style={{ filter: 'drop-shadow(0 4px 12px rgba(228, 98, 150, 0.3))' }}
+            />
+          </div>
+          <p className="text-lg md:text-xl text-[#d63384] font-medium italic">
+            flavours that feel like home
+          </p>
+        </div>
+
+        {/* Headline */}
+        <div className="text-center mb-8 px-4">
+          <h2 className="text-2xl md:text-3xl text-gray-700 font-light leading-relaxed">
+            Find your perfect cake in seconds.
+            <br />
+            <span className="font-medium">Just describe it.</span>
+          </h2>
+        </div>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-col items-center gap-4 mb-12 px-4">
+          <Link
+            href="/explore"
+            className="w-full max-w-sm py-4 px-8 btn-shimmer text-white font-bold text-lg rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 animate-pulse-glow"
+          >
+            <span className="text-2xl">🍰</span>
+            Explore Cakes
+          </Link>
+
+          <Link
+            href="/about"
+            className="w-full max-w-sm py-4 px-8 bg-white/80 backdrop-blur text-gray-700 font-semibold text-lg rounded-full shadow-lg hover:shadow-xl hover:bg-white transition-all duration-300 flex items-center justify-center gap-3 border border-gray-200"
+          >
+            <FaInfoCircle size={20} className="text-pink-400" />
+            About Us
+          </Link>
+        </div>
+
+        {/* Feature Cards */}
+        <div className="grid grid-cols-3 gap-2 md:gap-4 mb-10 px-2 max-w-md mx-auto">
+          {features.map((feature, index) => (
+            <div
+              key={index}
+              className="glass-card rounded-2xl p-3 md:p-5 text-center shadow-lg hover:shadow-xl transition-shadow duration-300"
+            >
+              <div className="text-xl md:text-3xl mb-1 md:mb-2">{feature.icon}</div>
+              <h3 className="text-xs md:text-sm font-bold text-[#E46296] mb-0.5 md:mb-1 leading-tight">{feature.title}</h3>
+              <p className="text-xs md:text-sm text-gray-500">{feature.subtitle}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Rating */}
+        <div className="text-center mb-6">
+          <p className="text-gray-600 text-sm md:text-base">
+            <span className="text-yellow-500">⭐</span> Rated 4.8 by 500+ customers in Kolkata
+          </p>
+        </div>
+
+        {/* Carousel Dots */}
+        <div className="flex justify-center gap-2">
+          {carouselProducts.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`transition-all duration-300 rounded-full ${index === currentSlide
+                ? 'w-6 h-2 bg-[#E46296]'
+                : 'w-2 h-2 bg-pink-300 hover:bg-pink-400'
+                }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+
+      </div>
     </main>
   );
 }
