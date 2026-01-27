@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { FaWhatsapp, FaInstagram, FaSearch, FaBook, FaBars, FaTimes, FaPhone, FaInfoCircle } from 'react-icons/fa';
 import ElfsightReviews from './_components/ElfsightReviews';
+import { useScrollPerformance } from './_components/ScrollPerformance';
 
 interface Product {
   id: number;
@@ -24,6 +25,9 @@ function HomeContent() {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [timerKey, setTimerKey] = useState(0);
+
+  // Enable scroll performance optimizations on mobile
+  useScrollPerformance();
 
   useEffect(() => {
     const isMenuOpen = searchParams.get('menu') === 'true';
@@ -129,13 +133,13 @@ function HomeContent() {
 
       {/* Bokeh Background Effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {/* Large soft circles */}
-        <div className="absolute top-10 left-5 w-40 h-40 bg-pink-300/50 rounded-full blur-3xl animate-float" />
-        <div className="absolute top-32 right-10 w-56 h-56 bg-pink-200/40 rounded-full blur-3xl animate-float-delayed" />
-        <div className="absolute bottom-40 left-1/4 w-52 h-52 bg-pink-300/45 rounded-full blur-3xl animate-float-slow" />
-        <div className="absolute bottom-10 right-5 w-36 h-36 bg-pink-200/50 rounded-full blur-2xl animate-float" />
-        <div className="absolute top-1/2 left-10 w-28 h-28 bg-white/60 rounded-full blur-2xl animate-float-delayed" />
-        <div className="absolute top-1/4 right-1/3 w-32 h-32 bg-pink-100/70 rounded-full blur-2xl animate-float-slow" />
+        {/* Large soft circles - blur-3xl on desktop, reduced on mobile via CSS */}
+        <div className="absolute top-10 left-5 w-40 h-40 bg-pink-300/50 rounded-full blur-3xl bokeh-blur-heavy animate-float" />
+        <div className="absolute top-32 right-10 w-56 h-56 bg-pink-200/40 rounded-full blur-3xl bokeh-blur-heavy animate-float-delayed" />
+        <div className="absolute bottom-40 left-1/4 w-52 h-52 bg-pink-300/45 rounded-full blur-3xl bokeh-blur-heavy animate-float-slow" />
+        <div className="absolute bottom-10 right-5 w-36 h-36 bg-pink-200/50 rounded-full blur-2xl bokeh-blur-medium animate-float" />
+        <div className="absolute top-1/2 left-10 w-28 h-28 bg-white/60 rounded-full blur-2xl bokeh-blur-medium animate-float-delayed" />
+        <div className="absolute top-1/4 right-1/3 w-32 h-32 bg-pink-100/70 rounded-full blur-2xl bokeh-blur-medium animate-float-slow" />
         {/* Sparkle particles */}
         <div className="absolute top-20 left-1/3 w-3 h-3 bg-white rounded-full animate-pulse opacity-80" />
         <div className="absolute top-40 right-1/4 w-2 h-2 bg-pink-200 rounded-full animate-pulse opacity-90" style={{ animationDelay: '0.5s' }} />

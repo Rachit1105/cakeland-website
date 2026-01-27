@@ -240,6 +240,46 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
+/* Mobile: Replace backdrop-filter with static fallback for performance */
+@media (max-width: 768px) {
+  .glass-card {
+    /* Static fallback: higher opacity, no blur = no repaint */
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: none;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    /* Subtle shadow to maintain depth perception */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Reduce translucent paint area on buttons */
+  .btn-glass-mobile {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Scroll-aware: disable expensive effects during scroll on mobile */
+@media (max-width: 768px) {
+
+  body.is-scrolling .glass-card,
+  body.is-scrolling [class*="backdrop-blur"],
+  body.is-scrolling [class*="bg-white/"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Increase opacity during scroll for solid rendering */
+  body.is-scrolling .glass-card {
+    background: rgba(255, 255, 255, 0.96);
+  }
+
+  /* Disable box-shadow animations during scroll */
+  body.is-scrolling .animate-pulse-glow {
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.3) !important;
+    animation: none !important;
+  }
+}
+
 /* Pulse glow animation */
 @keyframes pulseGlow {
 
@@ -255,4 +295,61 @@ body {
 
 .animate-pulse-glow {
   animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* ========== PERFORMANCE OPTIMIZATIONS ========== */
+
+/* GPU acceleration hints for animated elements */
+.animate-float,
+.animate-float-delayed,
+.animate-float-slow,
+.carousel-card {
+  will-change: transform, opacity;
+}
+
+/* Disable floating animations on mobile for 120Hz smoothness */
+@media (max-width: 768px) {
+
+  .animate-float,
+  .animate-float-delayed,
+  .animate-float-slow {
+    animation: none !important;
+  }
+
+  /* Reduce bokeh blur on mobile */
+  .bokeh-blur-heavy {
+    filter: blur(24px) !important;
+    /* Reduced from 48px */
+  }
+
+  .bokeh-blur-medium {
+    filter: blur(16px) !important;
+    /* Reduced from 32px */
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+
+  .animate-float,
+  .animate-float-delayed,
+  .animate-float-slow,
+  .animate-pulse-glow,
+  .animate-shimmer,
+  .animate-fade-in,
+  .btn-shimmer {
+    animation: none !important;
+  }
+
+  .carousel-card {
+    transition: none !important;
+  }
+
+  /* Remove will-change when no animations */
+  .animate-float,
+  .animate-float-delayed,
+  .animate-float-slow,
+  .carousel-card {
+    will-change: auto;
+  }
 }
