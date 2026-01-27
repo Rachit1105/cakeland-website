@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { FaWhatsapp, FaInstagram, FaSearch, FaBook, FaBars, FaTimes, FaPhone, FaInfoCircle } from 'react-icons/fa';
+import ElfsightReviews from './_components/ElfsightReviews';
 
 interface Product {
   id: number;
@@ -281,8 +282,6 @@ function HomeContent() {
           ))}
         </div>
 
-
-
         {/* Headline */}
         <div className="text-center mb-8 px-4">
           <h2 className="text-2xl md:text-3xl text-gray-700 leading-relaxed" style={{ fontFamily: 'Georgia, Times, serif' }}>
@@ -292,9 +291,8 @@ function HomeContent() {
           </h2>
         </div>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col items-center gap-3 mb-12 px-4">
-          {/* Explore Cakes - Primary CTA */}
+        {/* Primary CTA */}
+        <div className="flex flex-col items-center gap-3 mb-10 px-4">
           <Link
             href="/explore"
             className="w-full max-w-sm py-4 px-8 btn-shimmer text-white font-bold text-lg rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 animate-pulse-glow"
@@ -302,30 +300,10 @@ function HomeContent() {
             <span className="text-2xl">🍰</span>
             Explore Cakes
           </Link>
-
-          {/* Powered by AI text */}
-          <p className="text-gray-500 text-sm flex items-center gap-2 mb-2">
+          <p className="text-gray-500 text-sm flex items-center gap-2">
             <FaSearch size={14} className="text-gray-400" />
             Powered by AI cake search
           </p>
-
-          {/* View Menu - Secondary CTA */}
-          <Link
-            href="/menu"
-            className="w-full max-w-sm py-4 px-8 bg-white/90 backdrop-blur text-[#E46296] font-bold text-lg rounded-full shadow-lg hover:shadow-xl hover:bg-white transition-all duration-300 flex items-center justify-center gap-3 border border-pink-100"
-          >
-            <FaBook size={20} className="text-[#E46296]" />
-            View Menu
-          </Link>
-
-          {/* About Us - Text link */}
-          <Link
-            href="/about"
-            className="py-3 text-gray-700 font-semibold text-lg hover:text-[#E46296] transition-colors duration-300 flex items-center gap-2"
-          >
-            <FaInfoCircle size={18} className="text-pink-400" />
-            About Us
-          </Link>
         </div>
 
         {/* Feature Cards */}
@@ -342,11 +320,28 @@ function HomeContent() {
           ))}
         </div>
 
-        {/* Rating */}
-        <div className="text-center mb-8">
-          <p className="text-gray-600 text-sm md:text-base">
-            <span className="text-yellow-500">⭐</span> Rated 4.8 by customers in Kolkata
-          </p>
+        {/* Customer Reviews Section */}
+        <div className="mb-8 px-4">
+          {/* Elfsight Reviews Widget */}
+          <ElfsightReviews />
+        </div>
+
+        {/* Secondary Actions */}
+        <div className="flex flex-col items-center gap-3 mb-10 px-4">
+          <Link
+            href="/menu"
+            className="w-full max-w-sm py-4 px-8 bg-white/90 backdrop-blur text-[#E46296] font-bold text-lg rounded-full shadow-lg hover:shadow-xl hover:bg-white transition-all duration-300 flex items-center justify-center gap-3 border border-pink-100"
+          >
+            <FaBook size={20} className="text-[#E46296]" />
+            View Menu
+          </Link>
+          <Link
+            href="/about"
+            className="py-3 text-gray-700 font-semibold text-lg hover:text-[#E46296] transition-colors duration-300 flex items-center gap-2"
+          >
+            <FaInfoCircle size={18} className="text-pink-400" />
+            About Us
+          </Link>
         </div>
 
         {/* Logo & Tagline - Bottom */}
