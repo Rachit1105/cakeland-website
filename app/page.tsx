@@ -22,6 +22,7 @@ function HomeContent() {
   const [loading, setLoading] = useState(true);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [timerKey, setTimerKey] = useState(0);
 
   useEffect(() => {
     const isMenuOpen = searchParams.get('menu') === 'true';
@@ -73,7 +74,7 @@ function HomeContent() {
       setCurrentSlide((prev) => (prev + 1) % carouselProducts.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [carouselProducts.length]);
+  }, [carouselProducts.length, timerKey]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
@@ -88,9 +89,11 @@ function HomeContent() {
     const distance = touchStart - touchEnd;
     if (distance > 50) {
       setCurrentSlide((prev) => (prev + 1) % carouselProducts.length);
+      setTimerKey((prev) => prev + 1);
     }
     if (distance < -50) {
       setCurrentSlide((prev) => (prev - 1 + carouselProducts.length) % carouselProducts.length);
+      setTimerKey((prev) => prev + 1);
     }
     setTouchStart(0);
     setTouchEnd(0);
@@ -223,7 +226,7 @@ function HomeContent() {
 
         {/* 3D Carousel Section */}
         <div
-          className="relative h-[380px] md:h-[480px] flex items-center justify-center overflow-visible mb-6"
+          className="relative h-[380px] md:h-[480px] flex items-center justify-center overflow-visible"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -239,9 +242,10 @@ function HomeContent() {
                 const isVisible = position !== 'carousel-card-hidden';
 
                 return (
-                  <div
+                  <Link
                     key={product.id}
-                    className={`carousel-card absolute w-56 h-64 md:w-72 md:h-80 rounded-3xl overflow-hidden shadow-2xl border-4 border-white/80 ${position}`}
+                    href={`/cake/${product.id}`}
+                    className={`carousel-card absolute w-56 h-64 md:w-72 md:h-80 rounded-3xl overflow-hidden shadow-2xl border-4 border-white/80 cursor-pointer hover:scale-105 transition-transform ${position}`}
                     style={{ display: isVisible ? 'block' : 'none' }}
                   >
                     <Image
@@ -252,42 +256,45 @@ function HomeContent() {
                       sizes="(max-width: 768px) 224px, 288px"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                  </div>
+                  </Link>
                 );
               })}
             </div>
           )}
         </div>
 
-        {/* Logo & Tagline */}
-        <div className="text-center mb-8">
-          <div className="relative mx-auto mb-4 w-72 h-28 md:w-96 md:h-32">
-            {/* Soft diffused white glow for visibility */}
-            <div className="absolute inset-0 bg-white/50 rounded-full blur-3xl scale-150" />
-            <Image
-              src="/Cakeland.png"
-              alt="Cakeland Logo"
-              fill
-              className="object-contain relative z-10 drop-shadow-lg"
-              style={{ filter: 'drop-shadow(0 4px 12px rgba(228, 98, 150, 0.3))' }}
+        {/* Carousel Dots - Below Carousel */}
+        <div className="flex justify-center gap-2 mb-8">
+          {carouselProducts.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                setCurrentSlide(index);
+                setTimerKey((prev) => prev + 1);
+              }}
+              className={`transition-all duration-300 rounded-full ${index === currentSlide
+                ? 'w-6 h-2 bg-[#E46296]'
+                : 'w-2 h-2 bg-pink-300 hover:bg-pink-400'
+                }`}
+              aria-label={`Go to slide ${index + 1}`}
             />
-          </div>
-          <p className="text-lg md:text-xl text-[#d63384] font-medium italic">
-            flavours that feel like home
-          </p>
+          ))}
         </div>
+
+
 
         {/* Headline */}
         <div className="text-center mb-8 px-4">
-          <h2 className="text-2xl md:text-3xl text-gray-700 font-light leading-relaxed">
+          <h2 className="text-2xl md:text-3xl text-gray-700 leading-relaxed" style={{ fontFamily: 'Georgia, Times, serif' }}>
             Find your perfect cake in seconds.
             <br />
-            <span className="font-medium">Just describe it.</span>
+            <span className="font-semibold text-gray-800">Just describe it.</span>
           </h2>
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col items-center gap-4 mb-12 px-4">
+        <div className="flex flex-col items-center gap-3 mb-12 px-4">
+          {/* Explore Cakes - Primary CTA */}
           <Link
             href="/explore"
             className="w-full max-w-sm py-4 px-8 btn-shimmer text-white font-bold text-lg rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 animate-pulse-glow"
@@ -296,11 +303,27 @@ function HomeContent() {
             Explore Cakes
           </Link>
 
+          {/* Powered by AI text */}
+          <p className="text-gray-500 text-sm flex items-center gap-2 mb-2">
+            <FaSearch size={14} className="text-gray-400" />
+            Powered by AI cake search
+          </p>
+
+          {/* View Menu - Secondary CTA */}
+          <Link
+            href="/menu"
+            className="w-full max-w-sm py-4 px-8 bg-white/90 backdrop-blur text-[#E46296] font-bold text-lg rounded-full shadow-lg hover:shadow-xl hover:bg-white transition-all duration-300 flex items-center justify-center gap-3 border border-pink-100"
+          >
+            <FaBook size={20} className="text-[#E46296]" />
+            View Menu
+          </Link>
+
+          {/* About Us - Text link */}
           <Link
             href="/about"
-            className="w-full max-w-sm py-4 px-8 bg-white/80 backdrop-blur text-gray-700 font-semibold text-lg rounded-full shadow-lg hover:shadow-xl hover:bg-white transition-all duration-300 flex items-center justify-center gap-3 border border-gray-200"
+            className="py-3 text-gray-700 font-semibold text-lg hover:text-[#E46296] transition-colors duration-300 flex items-center gap-2"
           >
-            <FaInfoCircle size={20} className="text-pink-400" />
+            <FaInfoCircle size={18} className="text-pink-400" />
             About Us
           </Link>
         </div>
@@ -320,25 +343,38 @@ function HomeContent() {
         </div>
 
         {/* Rating */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <p className="text-gray-600 text-sm md:text-base">
-            <span className="text-yellow-500">⭐</span> Rated 4.8 by 500+ customers in Kolkata
+            <span className="text-yellow-500">⭐</span> Rated 4.8 by customers in Kolkata
           </p>
         </div>
 
-        {/* Carousel Dots */}
-        <div className="flex justify-center gap-2">
-          {carouselProducts.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`transition-all duration-300 rounded-full ${index === currentSlide
-                ? 'w-6 h-2 bg-[#E46296]'
-                : 'w-2 h-2 bg-pink-300 hover:bg-pink-400'
-                }`}
-              aria-label={`Go to slide ${index + 1}`}
+        {/* Logo & Tagline - Bottom */}
+        <div className="text-center mb-8">
+          <div className="relative mx-auto mb-6 w-64 h-24 md:w-80 md:h-28">
+            {/* Warm rose spotlight gradient behind logo */}
+            <div
+              className="absolute inset-0 scale-110 rounded-full"
+              style={{
+                background: 'radial-gradient(ellipse at center, rgba(180, 50, 90, 0.16) 0%, rgba(180, 50, 90, 0.06) 35%, transparent 55%)'
+              }}
             />
-          ))}
+            <Image
+              src="/Cakeland.png"
+              alt="Cakeland Logo"
+              fill
+              className="object-contain relative z-10"
+              style={{
+                filter: 'drop-shadow(0 1px 3px rgba(0, 0, 0, 0.12)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.08))'
+              }}
+            />
+          </div>
+          <p
+            className="text-lg md:text-xl text-[#c92a6e] font-medium italic"
+            style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.06)' }}
+          >
+            flavours that feel like home
+          </p>
         </div>
 
       </div>
