@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { supabase } from '../../../utils/supabase';
 import { getThumbnailUrl } from '../../../utils/imageHelpers';
@@ -80,30 +80,65 @@ export default function AdminGalleryPage() {
     };
 
     // Long press for mobile - enters selection mode
+    // Use ref to track if page scrolled during touch (works even if touchMove doesn't fire on element)
+    const isScrollingRef = useRef(false);
+    const touchActiveRef = useRef(false);
+
+    // Global scroll listener - sets flag when page scrolls during touch
+    useEffect(() => {
+        const handleScroll = () => {
+            if (touchActiveRef.current) {
+                isScrollingRef.current = true;
+                // Cancel any active long-press timer
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    setLongPressTimer(null);
+                }
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [longPressTimer]);
+
     const handleTouchStart = (productId: string, e: React.TouchEvent) => {
         // Prevent context menu from appearing
         e.preventDefault();
 
+        // Mark touch as active, reset scroll flag
+        touchActiveRef.current = true;
+        isScrollingRef.current = false;
+
         // If already in selection mode (selectedIds > 0), don't set timer
         if (selectedIds.size > 0) {
-            return; // Just tap will handle it
+            return;
         }
 
         const timer = setTimeout(() => {
-            toggleSelection(productId);
+            // Only select if page hasn't scrolled
+            if (!isScrollingRef.current) {
+                toggleSelection(productId);
+            }
         }, 600); // 600ms long press
         setLongPressTimer(timer);
     };
 
     const handleTouchEnd = (productId: string) => {
+        const didScroll = isScrollingRef.current;
+
+        // Reset refs
+        touchActiveRef.current = false;
+        isScrollingRef.current = false;
+
         if (longPressTimer) {
             // Cancel long press if finger lifted too early
             clearTimeout(longPressTimer);
             setLongPressTimer(null);
-        } else if (selectedIds.size > 0) {
-            // In selection mode - tap toggles selection (any image)
+        } else if (selectedIds.size > 0 && !didScroll) {
+            // In selection mode AND page didn't scroll - this is a tap
             toggleSelection(productId);
         }
+        // If didScroll is true, user was scrolling - do nothing
     };
 
     // Delete handler
