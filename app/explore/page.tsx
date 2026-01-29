@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FaHome, FaWhatsapp, FaInstagram, FaBars, FaTimes, FaBook, FaPhone, FaSearch } from 'react-icons/fa';
+import { FaHome, FaWhatsapp, FaInstagram, FaBars, FaTimes, FaBook, FaPhone, FaSearch, FaPalette, FaStar, FaBolt } from 'react-icons/fa';
 import { getThumbnailUrl, getLargeImageUrl } from '@/utils/imageHelpers';
 
 interface Product {
@@ -13,6 +13,8 @@ interface Product {
     image_url: string;
     thumbnail_url?: string | null; // Pre-made thumbnail
     similarity?: number;
+    title?: string | null; // AI-generated title
+    tags?: string[] | null; // AI-generated tags
 }
 
 function ExplorePageContent() {
@@ -489,7 +491,7 @@ function ExplorePageContent() {
     };
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-pink-200 via-pink-100 to-white">
+        <main className="min-h-screen bg-[#fef5f6]">
 
             {/* Navigation */}
             <nav className={`bg-[#E46296] h-20 md:h-24 sticky top-0 z-40 shadow-md px-2 md:px-10 flex justify-between items-center transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
@@ -566,28 +568,28 @@ function ExplorePageContent() {
             </div>
 
             {/* Search Bar */}
-            <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="max-w-7xl mx-auto px-4 py-10">
                 <div className="relative max-w-2xl mx-auto">
                     <input
                         type="text"
                         placeholder="Search for cakes... (e.g., 'birthday', 'chocolate', 'wedding')"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-6 py-4 pr-24 rounded-full bg-white shadow-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#E46296]/30 transition-all"
+                        className="w-full px-8 py-5 pr-24 rounded-full bg-white shadow-md text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E46296]/40 focus:shadow-lg transition-all"
                     />
-                    <FaSearch className="absolute right-6 top-1/2 transform -translate-y-1/2 text-[#E46296] text-xl pointer-events-none" />
+                    <FaSearch className="absolute right-7 top-1/2 transform -translate-y-1/2 text-[#E46296] text-xl pointer-events-none" />
 
                     {searchQuery && (
                         <button
                             onClick={clearSearch}
-                            className="absolute right-14 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                            className="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
                         >
                             <FaTimes size={20} />
                         </button>
                     )}
 
                     {isSearching && (
-                        <div className="absolute right-20 top-1/2 transform -translate-y-1/2">
+                        <div className="absolute right-24 top-1/2 transform -translate-y-1/2">
                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#E46296]"></div>
                         </div>
                     )}
@@ -608,24 +610,24 @@ function ExplorePageContent() {
             <div className="max-w-7xl mx-auto px-4 pb-20">
                 {isLoading ? (
                     // Enhanced Skeleton Loading with Shimmer
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6">
                         {[...Array(12)].map((_, i) => (
-                            <div key={i} className="bg-white rounded-xl overflow-hidden shadow-lg">
+                            <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm">
                                 <div className="aspect-square bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
                             </div>
                         ))}
                     </div>
                 ) : displayedProducts.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6">
                         {displayedProducts
                             .filter(product => !brokenImages.has(product.id))
                             .map((product, index) => (
                                 <div
                                     key={product.id}
                                     onClick={() => handleProductClick(product)}
-                                    className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
+                                    className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 active:scale-[0.98] transition-all duration-200 cursor-pointer"
                                 >
-                                    <div className="aspect-square relative bg-gray-100">
+                                    <div className="aspect-square relative bg-gray-50">
                                         {/* Skeleton while loading */}
                                         {!loadedImages.has(product.id) && (
                                             <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
@@ -674,18 +676,19 @@ function ExplorePageContent() {
                 )}
             </div>
 
-            {/* Simplified Modal - No Carousel */}
+            {/* Product Modal - Premium Spotlight */}
             {
                 selectedProduct && (
                     <div
-                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-0 md:p-6"
                         onClick={() => {
                             closeModal();
                             resetZoom();
                         }}
                     >
+                        {/* Modal Container - Split on Desktop, Stacked on Mobile */}
                         <div
-                            className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-auto select-none"
+                            className="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl md:rounded-3xl flex flex-col lg:flex-row shadow-2xl overflow-hidden select-none"
                             onClick={(e) => e.stopPropagation()}
                             onTouchStart={(e) => handleSwipeStart(e.touches[0].clientX)}
                             onTouchMove={(e) => handleSwipeMove(e.touches[0].clientX)}
@@ -695,12 +698,12 @@ function ExplorePageContent() {
                             onMouseUp={() => handleSwipeEnd()}
                             onMouseLeave={() => isDragging && handleSwipeEnd()}
                         >
-                            {/* Image Section with Swipe Support */}
-                            <div className="relative aspect-square bg-gray-100 overflow-hidden">
-                                {/* Single Image with Drag + Slide Animation */}
+                            {/* LEFT: Image Section (60% on desktop, full-width on mobile) */}
+                            <div className="group relative w-full lg:w-[60%] aspect-square lg:aspect-auto lg:min-h-[500px] bg-[#3d2a2e] overflow-hidden flex items-center justify-center">
+                                {/* Image with Swipe Support */}
                                 <div
                                     key={selectedProduct.id}
-                                    className={`w-full h-full ${slideDirection === 'next' ? 'animate-slide-in-from-right' :
+                                    className={`relative w-full h-full transition-transform duration-700 ease-out group-hover:scale-[1.02] ${slideDirection === 'next' ? 'animate-slide-in-from-right' :
                                         slideDirection === 'prev' ? 'animate-slide-in-from-left' : ''
                                         }`}
                                     style={{
@@ -713,90 +716,139 @@ function ExplorePageContent() {
                                         src={getLargeImageUrl(selectedProduct.image_url)}
                                         alt={selectedProduct.name}
                                         fill
-                                        className="object-contain"
+                                        className="object-contain p-4 lg:p-8"
                                         style={{ transform: `scale(${imageZoom})` }}
-                                        sizes="(max-width: 768px) 100vw, 50vw"
+                                        sizes="(max-width: 768px) 100vw, 60vw"
                                         priority
                                     />
                                 </div>
 
-                                {/* Close Button */}
+                                {/* Close Button - Top Right */}
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         closeModal();
                                         resetZoom();
                                     }}
-                                    className="absolute top-4 right-4 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition z-10"
+                                    className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition z-10"
                                 >
-                                    <FaTimes className="text-gray-700" size={20} />
+                                    <FaTimes className="text-white" size={18} />
                                 </button>
 
-                                {/* Navigation Arrows */}
+                                {/* Navigation - Left Arrow */}
                                 {getCurrentIndex() > 0 && (
                                     <button
                                         onClick={() => navigateProduct('prev')}
-                                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition"
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition"
                                     >
-                                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                         </svg>
                                     </button>
                                 )}
+
+                                {/* Navigation - Right Arrow */}
                                 <button
                                     onClick={() => navigateProduct('next')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition"
                                 >
-                                    <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                     </svg>
                                 </button>
 
-                                {/* Zoom Controls */}
-                                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                                {/* Zoom Controls - Bottom Left */}
+                                <div className="absolute bottom-4 left-4 flex gap-2">
                                     <button
                                         onClick={handleZoomIn}
                                         disabled={imageZoom >= 3}
-                                        className="bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition disabled:opacity-50"
+                                        className="w-9 h-9 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition disabled:opacity-40"
                                     >
-                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
                                         </svg>
                                     </button>
                                     <button
                                         onClick={handleZoomOut}
                                         disabled={imageZoom <= 1}
-                                        className="bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition disabled:opacity-50"
+                                        className="w-9 h-9 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition disabled:opacity-40"
                                     >
-                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
                                         </svg>
                                     </button>
                                     {imageZoom > 1 && (
                                         <button
                                             onClick={resetZoom}
-                                            className="bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition text-xs font-semibold text-gray-700"
+                                            className="w-9 h-9 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition text-xs font-semibold text-white"
                                         >
                                             1x
                                         </button>
                                     )}
                                 </div>
+
+                                {/* Image Counter */}
+                                <div className="absolute bottom-4 right-4 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-xs font-medium">
+                                    {getCurrentIndex() + 1} / {displayedProducts.length}
+                                </div>
                             </div>
 
-                            {/* Bottom Section */}
-                            <div className="p-6">
-                                <button
-                                    onClick={() => openWhatsApp(selectedProduct.name, selectedProduct.id)}
-                                    className="w-full bg-[#25D366] hover:bg-[#1fb855] text-white font-semibold py-4 px-6 rounded-full flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg"
-                                >
-                                    <FaWhatsapp size={24} />
-                                    Order on WhatsApp
-                                </button>
-                                <p className="mt-4 text-center text-sm text-gray-500">
-                                    We'll help you customize this design!
-                                </p>
-                                <p className="mt-2 text-center text-xs text-gray-400">
-                                    Swipe or use ← → arrows • ESC to close
+                            {/* RIGHT: CTA Section (40% on desktop, full-width bottom on mobile) */}
+                            <div className="w-full lg:w-[40%] flex flex-col justify-center p-6 lg:p-10 bg-white">
+
+                                {/* 1. Smart Title (Auto-Generated) */}
+                                <div className="mb-4">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-pink-50 text-pink-600 text-[10px] font-bold uppercase tracking-widest rounded-full select-none">
+                                        <FaStar size={10} className="mb-0.5" />
+                                        Premium Design
+                                    </span>
+                                </div>
+
+                                {/* 2. Description */}
+                                <div className="mb-6">
+                                    <p className="text-gray-600 text-base leading-relaxed">
+                                        Fallen in love with this look? We can bake this exact design for your celebration.
+                                    </p>
+                                </div>
+
+                                {/* 3. Trust Chips */}
+                                <div className="flex flex-wrap gap-3 mb-8">
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 shadow-sm select-none">
+                                        <FaPalette className="text-pink-400 text-sm" />
+                                        <span className="text-xs font-semibold text-gray-700">Customizable</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 shadow-sm select-none">
+                                        <FaStar className="text-yellow-400 text-sm" />
+                                        <span className="text-xs font-semibold text-gray-700">Freshly Baked</span>
+                                    </div>
+                                </div>
+
+                                {/* 4. Enhanced CTA Container */}
+                                <div className="bg-[#fdf8f9] border border-pink-100 rounded-2xl p-5 shadow-sm">
+                                    <div className="flex items-center justify-between mb-3 text-xs">
+                                        <span className="font-semibold text-gray-700 uppercase tracking-wide">Next Step</span>
+                                        <span className="flex items-center gap-1.5 text-green-600 font-medium">
+                                            <FaBolt size={12} />
+                                            Online Now
+                                        </span>
+                                    </div>
+
+                                    <button
+                                        onClick={() => openWhatsApp(selectedProduct.name, selectedProduct.id)}
+                                        className="w-full bg-[#25D366] hover:bg-[#1fb855] text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] shadow-md hover:shadow-lg"
+                                    >
+                                        <FaWhatsapp size={22} />
+                                        Get Price & Details
+                                    </button>
+
+                                    <p className="text-center text-[11px] text-gray-400 mt-3">
+                                        Direct WhatsApp chat • No payment needed yet
+                                    </p>
+                                </div>
+
+                                {/* Helper Text - Desktop only */}
+                                <p className="hidden lg:block text-left text-xs text-gray-300 mt-8 pl-1">
+                                    ← → to browse • ESC to close
                                 </p>
                             </div>
                         </div>

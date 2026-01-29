@@ -22,6 +22,8 @@ export default function AdminGalleryPage() {
     const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [deleteProgress, setDeleteProgress] = useState(0);
+    const [deleteTotal, setDeleteTotal] = useState(0);
 
     // Detect mobile device
     useEffect(() => {
@@ -141,32 +143,53 @@ export default function AdminGalleryPage() {
         // If didScroll is true, user was scrolling - do nothing
     };
 
-    // Delete handler
+    // Delete handler with progress tracking
     const handleDelete = async () => {
         setDeleting(true);
+        setDeleteProgress(0);
+
+        const idsToDelete = Array.from(selectedIds);
+        setDeleteTotal(idsToDelete.length);
+
+        // Process in batches for progress tracking
+        const BATCH_SIZE = 5;
+        let successCount = 0;
+        let failedCount = 0;
+
         try {
-            const response = await fetch('/api/admin/delete-products', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productIds: Array.from(selectedIds) })
-            });
+            for (let i = 0; i < idsToDelete.length; i += BATCH_SIZE) {
+                const batch = idsToDelete.slice(i, i + BATCH_SIZE);
 
-            const result = await response.json();
+                const response = await fetch('/api/admin/delete-products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productIds: batch })
+                });
 
-            if (response.ok) {
-                // Refresh products and clear selection
-                await fetchProducts();
-                setSelectedIds(new Set());
-                setShowDeleteModal(false);
-                alert(`Successfully deleted ${result.results.filter((r: any) => r.success).length} images`);
-            } else {
-                alert('Failed to delete some images. Please try again.');
+                const result = await response.json();
+
+                if (response.ok) {
+                    successCount += result.successCount || 0;
+                    failedCount += result.failedCount || 0;
+                }
+
+                // Update progress
+                setDeleteProgress(Math.min(i + batch.length, idsToDelete.length));
             }
+
+            // Refresh products and clear selection
+            await fetchProducts();
+            setSelectedIds(new Set());
+            setShowDeleteModal(false);
+            alert(`Successfully deleted ${successCount} images${failedCount > 0 ? ` (${failedCount} failed)` : ''}`);
+
         } catch (error) {
             console.error('Delete error:', error);
             alert('An error occurred during deletion.');
         } finally {
             setDeleting(false);
+            setDeleteProgress(0);
+            setDeleteTotal(0);
         }
     };
 
@@ -301,11 +324,31 @@ export default function AdminGalleryPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
                         <h2 className="text-2xl font-bold mb-4 text-gray-800">Confirm Deletion</h2>
-                        <p className="text-gray-600 mb-6">
+                        <p className="text-gray-600 mb-4">
                             Are you sure you want to delete <strong>{selectedIds.size}</strong> image{selectedIds.size > 1 ? 's' : ''}?
                             <br />
                             <span className="text-red-600 font-semibold">This action cannot be undone.</span>
                         </p>
+
+                        {/* Progress Bar */}
+                        {deleting && deleteTotal > 0 && (
+                            <div className="mb-4">
+                                <div className="flex justify-between text-sm text-gray-600 mb-1">
+                                    <span>Deleting...</span>
+                                    <span>{deleteProgress} / {deleteTotal}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-3">
+                                    <div
+                                        className="bg-red-500 h-3 rounded-full transition-all duration-300"
+                                        style={{ width: `${(deleteProgress / deleteTotal) * 100}%` }}
+                                    ></div>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1 text-center">
+                                    {Math.round((deleteProgress / deleteTotal) * 100)}% complete
+                                </p>
+                            </div>
+                        )}
+
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setShowDeleteModal(false)}

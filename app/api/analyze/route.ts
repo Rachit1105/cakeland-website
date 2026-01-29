@@ -24,8 +24,10 @@ export async function POST(request: Request) {
 
         const data = await response.json();
 
-        // Return the 768-dimensional embedding
-        return NextResponse.json({ embedding: data.embedding });
+        // Return only the embedding (no automatic tagging)
+        return NextResponse.json({
+            embedding: data.embedding
+        });
 
     } catch (error) {
         console.error('AI Error:', error);

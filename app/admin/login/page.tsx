@@ -2,11 +2,13 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function AdminLoginPage() {
     const router = useRouter();
     const [adminId, setAdminId] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -81,16 +83,26 @@ export default function AdminLoginPage() {
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                                 Password
                             </label>
-                            <input
-                                type="password"
-                                id="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-[#E46296] focus:ring-2 focus:ring-[#E46296]/20 transition-all outline-none text-gray-800 placeholder-gray-400"
-                                placeholder="Enter your password"
-                                disabled={loading}
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    id="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="w-full px-4 py-3 pr-12 rounded-lg border-2 border-gray-200 focus:border-[#E46296] focus:ring-2 focus:ring-[#E46296]/20 transition-all outline-none text-gray-800 placeholder-gray-400"
+                                    placeholder="Enter your password"
+                                    disabled={loading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Error Message */}

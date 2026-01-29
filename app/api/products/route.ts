@@ -22,7 +22,7 @@ export async function GET(request: Request) {
         // Get paginated products (with thumbnail URLs for faster loading)
         const { data: products, error } = await supabase
             .from('products')
-            .select('id, name, image_url, thumbnail_url')
+            .select('id, name, image_url, thumbnail_url, title, tags')
             .not('embedding', 'is', null)
             .order('id', { ascending: false })
             .range(offset, offset + limit - 1);
