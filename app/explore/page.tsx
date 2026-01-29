@@ -821,7 +821,7 @@ function ExplorePageContent() {
 
                                 {/* Helper Text */}
                                 <p className="text-[#a8a19c] text-[11px] max-w-[80%] leading-tight">
-                                    Send us a message on WhatsApp to get a quote—and start your order!
+                                    Send us a message on WhatsApp to get a quote and start your order!
                                 </p>
 
                             </div>
