@@ -688,7 +688,7 @@ function ExplorePageContent() {
                     >
                         {/* Modal Container - Split on Desktop, Stacked on Mobile */}
                         <div
-                            className="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl md:rounded-3xl flex flex-col lg:flex-row shadow-2xl overflow-hidden select-none"
+                            className="relative w-full max-w-[420px] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-100"
                             onClick={(e) => e.stopPropagation()}
                             onTouchStart={(e) => handleSwipeStart(e.touches[0].clientX)}
                             onTouchMove={(e) => handleSwipeMove(e.touches[0].clientX)}
@@ -698,8 +698,8 @@ function ExplorePageContent() {
                             onMouseUp={() => handleSwipeEnd()}
                             onMouseLeave={() => isDragging && handleSwipeEnd()}
                         >
-                            {/* LEFT: Image Section (60% on desktop, full-width on mobile) */}
-                            <div className="group relative w-full lg:w-[60%] aspect-square lg:aspect-auto lg:min-h-[500px] bg-[#3d2a2e] overflow-hidden flex items-center justify-center">
+                            {/* TOP: Image Section */}
+                            <div className="group relative w-full aspect-[4/3] bg-gray-50 overflow-hidden flex items-center justify-center">
                                 {/* Image with Swipe Support */}
                                 <div
                                     key={selectedProduct.id}
@@ -716,7 +716,7 @@ function ExplorePageContent() {
                                         src={getLargeImageUrl(selectedProduct.image_url)}
                                         alt={selectedProduct.name}
                                         fill
-                                        className="object-contain p-4 lg:p-8"
+                                        className="object-contain"
                                         style={{ transform: `scale(${imageZoom})` }}
                                         sizes="(max-width: 768px) 100vw, 60vw"
                                         priority
@@ -730,18 +730,18 @@ function ExplorePageContent() {
                                         closeModal();
                                         resetZoom();
                                     }}
-                                    className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition z-10"
+                                    className="absolute top-4 right-4 w-10 h-10 bg-white/90 hover:bg-white shadow-sm rounded-full flex items-center justify-center transition z-10 text-gray-700"
                                 >
-                                    <FaTimes className="text-white" size={18} />
+                                    <FaTimes size={18} />
                                 </button>
 
                                 {/* Navigation - Left Arrow */}
                                 {getCurrentIndex() > 0 && (
                                     <button
                                         onClick={() => navigateProduct('prev')}
-                                        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition"
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white shadow-sm rounded-full flex items-center justify-center transition text-gray-700"
                                     >
-                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                         </svg>
                                     </button>
@@ -750,9 +750,9 @@ function ExplorePageContent() {
                                 {/* Navigation - Right Arrow */}
                                 <button
                                     onClick={() => navigateProduct('next')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white shadow-sm rounded-full flex items-center justify-center transition text-gray-700"
                                 >
-                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                     </svg>
                                 </button>
@@ -762,94 +762,68 @@ function ExplorePageContent() {
                                     <button
                                         onClick={handleZoomIn}
                                         disabled={imageZoom >= 3}
-                                        className="w-9 h-9 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition disabled:opacity-40"
+                                        className="w-9 h-9 bg-white/90 hover:bg-white shadow-sm rounded-full flex items-center justify-center transition disabled:opacity-40 text-gray-700"
                                     >
-                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
                                         </svg>
                                     </button>
                                     <button
                                         onClick={handleZoomOut}
                                         disabled={imageZoom <= 1}
-                                        className="w-9 h-9 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition disabled:opacity-40"
+                                        className="w-9 h-9 bg-white/90 hover:bg-white shadow-sm rounded-full flex items-center justify-center transition disabled:opacity-40 text-gray-700"
                                     >
-                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
                                         </svg>
                                     </button>
                                     {imageZoom > 1 && (
                                         <button
                                             onClick={resetZoom}
-                                            className="w-9 h-9 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition text-xs font-semibold text-white"
+                                            className="w-9 h-9 bg-white/90 hover:bg-white shadow-sm rounded-full flex items-center justify-center transition text-xs font-semibold text-gray-700"
                                         >
                                             1x
                                         </button>
                                     )}
                                 </div>
 
-                                {/* Image Counter */}
-                                <div className="absolute bottom-4 right-4 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-xs font-medium">
-                                    {getCurrentIndex() + 1} / {displayedProducts.length}
-                                </div>
                             </div>
 
-                            {/* RIGHT: CTA Section (40% on desktop, full-width bottom on mobile) */}
-                            <div className="w-full lg:w-[40%] flex flex-col justify-center p-6 lg:p-10 bg-white">
+                            {/* BOTTOM: Content Section */}
+                            <div className="w-full flex-1 flex flex-col items-center bg-white px-6 py-6 text-center overflow-y-auto">
 
-                                {/* 1. Smart Title (Auto-Generated) */}
-                                <div className="mb-4">
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-pink-50 text-pink-600 text-[10px] font-bold uppercase tracking-widest rounded-full select-none">
-                                        <FaStar size={10} className="mb-0.5" />
-                                        Premium Design
-                                    </span>
-                                </div>
-
-                                {/* 2. Description */}
-                                <div className="mb-6">
-                                    <p className="text-gray-600 text-base leading-relaxed">
-                                        Fallen in love with this look? We can bake this exact design for your celebration.
-                                    </p>
-                                </div>
-
-                                {/* 3. Trust Chips */}
-                                <div className="flex flex-wrap gap-3 mb-8">
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 shadow-sm select-none">
-                                        <FaPalette className="text-pink-400 text-sm" />
-                                        <span className="text-xs font-semibold text-gray-700">Customizable</span>
+                                {/* Pills Section */}
+                                <div className="flex flex-wrap justify-center gap-2 mb-6">
+                                    <div className="px-3 py-1.5 bg-[#f5f0eb] rounded-full border border-[#ebe5de] select-none">
+                                        <span className="text-[11px] font-medium text-[#6b635f] uppercase tracking-wide">Custom Made</span>
                                     </div>
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 shadow-sm select-none">
-                                        <FaStar className="text-yellow-400 text-sm" />
-                                        <span className="text-xs font-semibold text-gray-700">Freshly Baked</span>
+                                    <div className="px-3 py-1.5 bg-[#f5f0eb] rounded-full border border-[#ebe5de] select-none">
+                                        <span className="text-[11px] font-medium text-[#6b635f] uppercase tracking-wide">Home Baked</span>
+                                    </div>
+                                    <div className="px-3 py-1.5 bg-[#f5f0eb] rounded-full border border-[#ebe5de] select-none">
+                                        <span className="text-[11px] font-medium text-[#6b635f] uppercase tracking-wide">100% Eggless</span>
                                     </div>
                                 </div>
 
-                                {/* 4. Enhanced CTA Container */}
-                                <div className="bg-[#fdf8f9] border border-pink-100 rounded-2xl p-5 shadow-sm">
-                                    <div className="flex items-center justify-between mb-3 text-xs">
-                                        <span className="font-semibold text-gray-700 uppercase tracking-wide">Next Step</span>
-                                        <span className="flex items-center gap-1.5 text-green-600 font-medium">
-                                            <FaBolt size={12} />
-                                            Online Now
-                                        </span>
-                                    </div>
-
-                                    <button
-                                        onClick={() => openWhatsApp(selectedProduct.name, selectedProduct.id)}
-                                        className="w-full bg-[#25D366] hover:bg-[#1fb855] text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] shadow-md hover:shadow-lg"
-                                    >
-                                        <FaWhatsapp size={22} />
-                                        Get Price & Details
-                                    </button>
-
-                                    <p className="text-center text-[11px] text-gray-400 mt-3">
-                                        Direct WhatsApp chat • No payment needed yet
-                                    </p>
-                                </div>
-
-                                {/* Helper Text - Desktop only */}
-                                <p className="hidden lg:block text-left text-xs text-gray-300 mt-8 pl-1">
-                                    ← → to browse • ESC to close
+                                {/* Secondary Descriptive Text - Warm & Human */}
+                                <p className="text-gray-600 text-xs leading-relaxed max-w-sm mb-6">
+                                    Flavours can be customised based on your preference and availability. We’ll help you choose the best option that works perfectly for your celebration.
                                 </p>
+
+                                {/* Old Button Design - 3D Pressed Style */}
+                                <button
+                                    onClick={() => openWhatsApp(selectedProduct.name, selectedProduct.id)}
+                                    className="w-full mb-3 bg-[#E46296] hover:bg-[#d65287] text-white font-serif text-lg py-3 px-6 rounded-2xl shadow-sm transition-all transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 border-b-4 border-[#be3e6e]"
+                                >
+                                    <FaWhatsapp className="text-white" size={22} />
+                                    <span>Order on WhatsApp</span>
+                                </button>
+
+                                {/* Helper Text */}
+                                <p className="text-[#a8a19c] text-[11px] max-w-[80%] leading-tight">
+                                    Send us a message on WhatsApp to get a quote—and start your order!
+                                </p>
+
                             </div>
                         </div>
                     </div>
